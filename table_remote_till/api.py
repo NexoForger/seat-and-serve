@@ -556,6 +556,66 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 	return _snapshot(order)
 
 
+@frappe.whitelist()
+def return_order(order_name, event_id, expected_revision):
+	"""Create one full POS Invoice return for a settled till order.
+
+	Partial line returns need a return-specific quantity and stock policy, so the
+	first release deliberately accepts only a full invoice return. ERPNext owns
+	tax, stock, payment reversal, and duplicate-return validation.
+	"""
+	_staff()
+	if frappe.request and frappe.request.method != "POST":
+		frappe.throw("POST required", frappe.PermissionError)
+	if not event_id:
+		frappe.throw("Event ID required")
+	payload = {"order": order_name, "kind": "full_return"}
+	prior = frappe.db.get_value("TRT Sync Event", {"event_id": event_id},
+		["order", "payload_json"], as_dict=True)
+	if prior:
+		stored = frappe.parse_json(prior.payload_json)
+		if prior.order != order_name or stored.get("order") != order_name or stored.get("kind") != "full_return":
+			frappe.throw("Event ID belongs to another return")
+		return stored.get("result") or {
+			"order": order_name, "status": "Returned",
+		}
+	frappe.db.sql("SELECT name FROM `tabTRT Order` WHERE name=%s FOR UPDATE", order_name)
+	order = frappe.get_doc("TRT Order", order_name)
+	_staff_outlet(order.outlet)
+	if int(expected_revision) != order.revision:
+		frappe.throw("Order changed; refresh before return", frappe.TimestampMismatchError)
+	if order.status != "Settled" or not order.pos_invoice:
+		frappe.throw("Only a settled order can be returned")
+	if frappe.db.exists("POS Invoice", {"name": order.pos_invoice, "docstatus": 0}):
+		frappe.throw("The source POS Invoice is not submitted")
+	if frappe.db.exists("POS Invoice", {"return_against": order.pos_invoice, "docstatus": 1}):
+		frappe.throw("This POS Invoice has already been returned")
+	source = frappe.get_doc("POS Invoice", order.pos_invoice)
+	if source.docstatus != 1 or source.is_return:
+		frappe.throw("The source POS Invoice cannot be returned")
+	from erpnext.accounts.doctype.pos_invoice.pos_invoice import make_sales_return
+	actor = frappe.session.user
+	try:
+		# ERPNext validates the source, derives negative items/payments, and
+		# posts the stock and accounting reversal under the service identity.
+		frappe.set_user("Administrator")
+		return_doc = make_sales_return(source.name)
+		return_doc.remarks = f"Table Remote Till full return for order {order.name}"
+		return_doc.insert(ignore_permissions=True)
+		return_doc.submit()
+	finally:
+		frappe.set_user(actor)
+	order.revision += 1
+	order.save(ignore_permissions=True)
+	result = {"order": order.name, "status": "Returned", "return_invoice": return_doc.name,
+		"revision": order.revision}
+	frappe.get_doc({"doctype": "TRT Sync Event", "event_id": event_id,
+		"outlet": order.outlet, "register": order.register, "order": order.name,
+		"event_type": "return", "payload_json": json.dumps({**payload, "result": result}),
+		"status": "Applied", "received_at": now_datetime()}).insert(ignore_permissions=True)
+	return result
+
+
 @frappe.whitelist(allow_guest=True)
 def payment_intent(order_name, idempotency_key, expected_revision, guest_token=None):
 	"""Create a sandbox intent; live providers must implement this interface."""

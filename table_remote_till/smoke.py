@@ -65,6 +65,10 @@ def run():
 			[{"mode_of_payment": "Cash", "currency": "USD", "amount": added["grand_total"]}],
 			str(uuid.uuid4()), added["revision"])
 		assert settled["status"] == "Settled" and settled["pos_invoice"]
+		return_event = str(uuid.uuid4())
+		returned = api.return_order(created["name"], return_event, settled["revision"])
+		assert returned["status"] == "Returned" and returned["return_invoice"]
+		assert api.return_order(created["name"], return_event, settled["revision"])["return_invoice"] == returned["return_invoice"]
 		frappe.db.set_value("Currency", "LBP", "enabled", 1)
 		frappe.get_doc({"doctype": "TRT FX Rate", "outlet": outlet.name,
 			"effective_date": frappe.utils.today(), "lbp_per_usd": 89500,
@@ -142,6 +146,7 @@ def run():
 			"idempotent": True, "version_conflict": True, "guest_priced": guest_item["grand_total"],
 			"cash_invoice": settled["pos_invoice"], "mixed_cash_invoice": mixed_settled["pos_invoice"],
 			"cashier_invoice": cashier_settled["pos_invoice"],
+			"return_invoice": returned["return_invoice"],
 			"sandbox_tested": bool(frappe.conf.developer_mode)})
 	finally:
 		frappe.db.rollback()

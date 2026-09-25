@@ -8,7 +8,7 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["frappe/erpnext", "frappe/hrms"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -43,7 +43,7 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {"TRT Import Job": "public/js/trt_import_job.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -85,8 +85,9 @@ app_license = "mit"
 # Installation
 # ------------
 
-# before_install = "table_remote_till.install.before_install"
-# after_install = "table_remote_till.install.after_install"
+before_install = "table_remote_till.install.before_install"
+after_install = "table_remote_till.install.after_install"
+after_migrate = "table_remote_till.install.after_migrate"
 
 # Uninstallation
 # ------------
@@ -262,3 +263,4 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+website_route_rules = [{'from_route': '/menu/<path:app_path>', 'to_route': 'menu'}, {'from_route': '/kiosk/<path:app_path>', 'to_route': 'kiosk'}, {'from_route': '/kitchen/<path:app_path>', 'to_route': 'kitchen'}, {'from_route': '/till/<path:app_path>', 'to_route': 'till'},]

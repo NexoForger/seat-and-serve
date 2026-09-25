@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Business onboarding · Table Remote Till</title>
+<style>
+body{font:16px system-ui;margin:0;background:#f2f5f9;color:#142239} header{background:#142239;color:white;padding:1rem 2rem}
+main{max-width:940px;margin:2rem auto;padding:0 1rem}section{background:white;border:1px solid #dce4ee;border-radius:1rem;padding:1.5rem;margin:1rem 0}
+li{padding:.7rem;border-bottom:1px solid #e7edf3}a{color:#087e8b}select,button{padding:.6rem;border-radius:.5rem;border:1px solid #b7c6d6}
+.ok{color:#147047}.todo{color:#a43e20}.muted{color:#61738a}
+</style></head><body>
+<header><strong>Table Remote Till · Business onboarding</strong></header>
+<main>
+<section><h1>Set up a business site</h1><p>Complete ERPNext setup first, then work through each linked area. Have the business approve its tax and payroll settings before a live rollout.</p>
+<label>Company <select id="company"></select></label> <button id="refresh">Refresh checks</button>
+<p id="progress" role="status"></p><ol id="checks"></ol></section>
+<section><h2>Import existing data</h2><p>Collect private CSV or Excel exports from Omega POS, Squirrel Cloud, Squirrel 11, or another source. Map and preview each file in an Import Job. Historical transaction import requires a source specific reconciled importer; the source inventory shows missing export categories.</p>
+<a href="/app/trt-import-job/new-trt-import-job">Create import job</a> · <a href="/app/trt-legacy-record">Source ID ledger</a></section>
+</main>
+<script>window.csrf_token = {{ csrf_token | tojson }};</script>
+<script>
+const selector=document.querySelector('#company');
+async function refresh(){
+  const url='/api/method/table_remote_till.onboarding.status'+(selector.value?'?company='+encodeURIComponent(selector.value):'');
+  const response=await fetch(url,{credentials:'same-origin'});
+  const data=await response.json();
+  if(!response.ok){document.querySelector('#progress').textContent='Could not load checks';return;}
+  const state=data.message;
+  if(!selector.options.length){for(const company of state.companies){const option=new Option(company,company);selector.add(option);}}
+  selector.value=state.company||'';
+  document.querySelector('#progress').textContent=`${state.ready_count} of ${state.total_count} checks ready`;
+  const list=document.querySelector('#checks');list.replaceChildren();
+  for(const step of state.steps){const li=document.createElement('li');const link=document.createElement('a');
+    link.href=step.route;link.textContent=step.label;const marker=document.createElement('strong');
+    marker.className=step.ready?'ok':'todo';marker.textContent=step.ready?' ✓ ':' · To do: ';
+    li.append(marker,link);list.append(li);}
+}
+selector.addEventListener('change',refresh);document.querySelector('#refresh').addEventListener('click',refresh);refresh();
+</script></body></html>

@@ -1,0 +1,263 @@
+kind,name,document,field,property,decision
+Custom Field,Address-is_your_company_address,Address,is_your_company_address,,Site-owned; do not export
+Custom Field,Address-tax_category,Address,tax_category,,Site-owned; do not export
+Custom Field,Communication-company,Communication,company,,Site-owned; do not export
+Custom Field,Company-column_break_0swzo,Company,column_break_0swzo,,Site-owned; do not export
+Custom Field,Company-column_break_10,Company,column_break_10,,Site-owned; do not export
+Custom Field,Company-default_employee_advance_account,Company,default_employee_advance_account,,Site-owned; do not export
+Custom Field,Company-default_expense_claim_payable_account,Company,default_expense_claim_payable_account,,Site-owned; do not export
+Custom Field,Company-default_payroll_payable_account,Company,default_payroll_payable_account,,Site-owned; do not export
+Custom Field,Company-hr_and_payroll_tab,Company,hr_and_payroll_tab,,Site-owned; do not export
+Custom Field,Company-hr_settings_section,Company,hr_settings_section,,Site-owned; do not export
+Custom Field,Company-receipt_footer,Company,receipt_footer,,Site-owned; do not export
+Custom Field,Company-receipt_header,Company,receipt_header,,Site-owned; do not export
+Custom Field,Contact-is_billing_contact,Contact,is_billing_contact,,Site-owned; do not export
+Custom Field,Custom DocPerm-impersonate,Custom DocPerm,impersonate,,Site-owned; do not export
+Custom Field,Department-approvers,Department,approvers,,Site-owned; do not export
+Custom Field,Department-column_break_9,Department,column_break_9,,Site-owned; do not export
+Custom Field,Department-expense_approvers,Department,expense_approvers,,Site-owned; do not export
+Custom Field,Department-leave_approvers,Department,leave_approvers,,Site-owned; do not export
+Custom Field,Department-leave_block_list,Department,leave_block_list,,Site-owned; do not export
+Custom Field,Department-payroll_cost_center,Department,payroll_cost_center,,Site-owned; do not export
+Custom Field,Department-section_break_4,Department,section_break_4,,Site-owned; do not export
+Custom Field,Department-shift_request_approver,Department,shift_request_approver,,Site-owned; do not export
+Custom Field,Designation-appraisal_template,Designation,appraisal_template,,Site-owned; do not export
+Custom Field,Designation-required_skills_section,Designation,required_skills_section,,Site-owned; do not export
+Custom Field,Designation-skills,Designation,skills,,Site-owned; do not export
+Custom Field,DocPerm-impersonate,DocPerm,impersonate,,Site-owned; do not export
+Custom Field,DocShare-impersonate,DocShare,impersonate,,Site-owned; do not export
+Custom Field,Email Account-company,Email Account,company,,Site-owned; do not export
+Custom Field,Employee-approvers_section,Employee,approvers_section,,Site-owned; do not export
+Custom Field,Employee-column_break_45,Employee,column_break_45,,Site-owned; do not export
+Custom Field,Employee-default_shift,Employee,default_shift,,Site-owned; do not export
+Custom Field,Employee-employee_advance_account,Employee,employee_advance_account,,Site-owned; do not export
+Custom Field,Employee-employment_type,Employee,employment_type,,Site-owned; do not export
+Custom Field,Employee-expense_approver,Employee,expense_approver,,Site-owned; do not export
+Custom Field,Employee-grade,Employee,grade,,Site-owned; do not export
+Custom Field,Employee-health_insurance_no,Employee,health_insurance_no,,Site-owned; do not export
+Custom Field,Employee-health_insurance_provider,Employee,health_insurance_provider,,Site-owned; do not export
+Custom Field,Employee-health_insurance_section,Employee,health_insurance_section,,Site-owned; do not export
+Custom Field,Employee-job_applicant,Employee,job_applicant,,Site-owned; do not export
+Custom Field,Employee-leave_approver,Employee,leave_approver,,Site-owned; do not export
+Custom Field,Employee-payroll_cost_center,Employee,payroll_cost_center,,Site-owned; do not export
+Custom Field,Employee-salary_cb,Employee,salary_cb,,Site-owned; do not export
+Custom Field,Employee-shift_request_approver,Employee,shift_request_approver,,Site-owned; do not export
+Custom Field,Item-custom_local_item_name,Item,local_item_name,,Site-owned; do not export
+Custom Field,POS Invoice-column_break_irkyn,POS Invoice,column_break_irkyn,,Site-owned; do not export
+Custom Field,POS Profile-custom_allow_delete_draft_invoices,POS Profile,allow_delete_draft_invoices,,Site-owned; do not export
+Custom Field,POS Profile-column_break_cnwjh,POS Profile,column_break_cnwjh,,Site-owned; do not export
+Custom Field,POS Profile-column_break_pvbpj,POS Profile,column_break_pvbpj,,Site-owned; do not export
+Custom Field,POS Profile-column_break_zfglz,POS Profile,column_break_zfglz,,Site-owned; do not export
+Custom Field,POS Profile-custom_column_break_2d17v,POS Profile,custom_column_break_2d17v,,Site-owned; do not export
+Custom Field,POS Profile-custom_column_break_ycung,POS Profile,custom_column_break_ycung,,Site-owned; do not export
+Custom Field,POS Profile-default_purchase_uom,POS Profile,default_purchase_uom,,Site-owned; do not export
+Custom Field,POS Profile-pos_payments_section,POS Profile,pos_payments_section,,Site-owned; do not export
+Custom Field,POS Profile-print_discount_amount,POS Profile,print_discount_amount,,Site-owned; do not export
+Custom Field,POS Profile-purchasing,POS Profile,purchasing,,Site-owned; do not export
+Custom Field,POS Profile-selling,POS Profile,selling,,Site-owned; do not export
+Custom Field,POS Profile-update_buying_price,POS Profile,update_buying_price,,Site-owned; do not export
+Custom Field,POS Profile-update_selling_price,POS Profile,update_selling_price,,Site-owned; do not export
+Custom Field,POS Profile User-custom_pos_role,POS Profile User,pos_role,,Site-owned; do not export
+Custom Field,Print Settings-compact_item_print,Print Settings,compact_item_print,,Site-owned; do not export
+Custom Field,Print Settings-print_taxes_with_zero_amount,Print Settings,print_taxes_with_zero_amount,,Site-owned; do not export
+Custom Field,Print Settings-print_uom_after_quantity,Print Settings,print_uom_after_quantity,,Site-owned; do not export
+Custom Field,Project-total_expense_claim,Project,total_expense_claim,,Site-owned; do not export
+Custom Field,Sales Invoice-column_break_mvpuc,Sales Invoice,column_break_mvpuc,,Site-owned; do not export
+Custom Field,Sales Invoice Item-local_item_name,Sales Invoice Item,local_item_name,,Site-owned; do not export
+Custom Field,Task-total_expense_claim,Task,total_expense_claim,,Site-owned; do not export
+Custom Field,Terms and Conditions-hr,Terms and Conditions,hr,,Site-owned; do not export
+Custom Field,Timesheet-salary_slip,Timesheet,salary_slip,,Site-owned; do not export
+Custom Field,UTM Campaign-crm_campaign,UTM Campaign,crm_campaign,,Site-owned; do not export
+Property Setter,Account Closing Balance-accounting_dimensions_section-hidden,Account Closing Balance,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Advance Taxes and Charges-accounting_dimensions_section-hidden,Advance Taxes and Charges,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Asset-accounting_dimensions_section-hidden,Asset,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Asset Capitalization-accounting_dimensions_section-hidden,Asset Capitalization,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Asset Depreciation Schedule-accounting_dimensions_section-hidden,Asset Depreciation Schedule,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Asset Movement Item-accounting_dimensions_section-hidden,Asset Movement Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Asset Repair-accounting_dimensions_section-hidden,Asset Repair,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Asset Value Adjustment-accounting_dimensions_section-hidden,Asset Value Adjustment,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Budget-accounting_dimensions_section-hidden,Budget,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Company-main-field_order,Company,,field_order,Site-owned; do not export
+Property Setter,Customer-naming_series-hidden,Customer,naming_series,hidden,Site-owned; do not export
+Property Setter,Customer-naming_series-reqd,Customer,naming_series,reqd,Site-owned; do not export
+Property Setter,Delivery Note-main-default_print_format,Delivery Note,,default_print_format,Site-owned; do not export
+Property Setter,Delivery Note-accounting_dimensions_section-hidden,Delivery Note,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Delivery Note-base_rounded_total-hidden,Delivery Note,base_rounded_total,hidden,Site-owned; do not export
+Property Setter,Delivery Note-base_rounded_total-print_hide,Delivery Note,base_rounded_total,print_hide,Site-owned; do not export
+Property Setter,Delivery Note-disable_rounded_total-default,Delivery Note,disable_rounded_total,default,Site-owned; do not export
+Property Setter,Delivery Note-in_words-hidden,Delivery Note,in_words,hidden,Site-owned; do not export
+Property Setter,Delivery Note-in_words-print_hide,Delivery Note,in_words,print_hide,Site-owned; do not export
+Property Setter,Delivery Note-rounded_total-hidden,Delivery Note,rounded_total,hidden,Site-owned; do not export
+Property Setter,Delivery Note-rounded_total-print_hide,Delivery Note,rounded_total,print_hide,Site-owned; do not export
+Property Setter,Delivery Note-scan_barcode-hidden,Delivery Note,scan_barcode,hidden,Site-owned; do not export
+Property Setter,Delivery Note-tax_id-hidden,Delivery Note,tax_id,hidden,Site-owned; do not export
+Property Setter,Delivery Note-tax_id-print_hide,Delivery Note,tax_id,print_hide,Site-owned; do not export
+Property Setter,Delivery Note-utm_analytics_section-hidden,Delivery Note,utm_analytics_section,hidden,Site-owned; do not export
+Property Setter,Delivery Note Item-accounting_dimensions_section-hidden,Delivery Note Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Delivery Note Item-barcode-hidden,Delivery Note Item,barcode,hidden,Site-owned; do not export
+Property Setter,Delivery Note Item-discount_and_margin-hidden,Delivery Note Item,discount_and_margin,hidden,Site-owned; do not export
+Property Setter,Employee-employee_number-hidden,Employee,employee_number,hidden,Site-owned; do not export
+Property Setter,Employee-employee_number-reqd,Employee,employee_number,reqd,Site-owned; do not export
+Property Setter,Employee-naming_series-hidden,Employee,naming_series,hidden,Site-owned; do not export
+Property Setter,Employee-naming_series-reqd,Employee,naming_series,reqd,Site-owned; do not export
+Property Setter,GL Entry-accounting_dimensions_section-hidden,GL Entry,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Item-main-field_order,Item,,field_order,Site-owned; do not export
+Property Setter,Item-barcodes-hidden,Item,barcodes,hidden,Site-owned; do not export
+Property Setter,Item-item_code-hidden,Item,item_code,hidden,Site-owned; do not export
+Property Setter,Item-item_code-reqd,Item,item_code,reqd,Site-owned; do not export
+Property Setter,Item-naming_series-hidden,Item,naming_series,hidden,Site-owned; do not export
+Property Setter,Item-naming_series-reqd,Item,naming_series,reqd,Site-owned; do not export
+Property Setter,Item Barcode-barcode-hidden,Item Barcode,barcode,hidden,Site-owned; do not export
+Property Setter,Job Card-barcode-hidden,Job Card,barcode,hidden,Site-owned; do not export
+Property Setter,Journal Entry Account-accounting_dimensions_section-hidden,Journal Entry Account,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Journal Entry Template Account-accounting_dimensions_section-hidden,Journal Entry Template Account,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Landed Cost Item-accounting_dimensions_section-hidden,Landed Cost Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Landed Cost Taxes and Charges-accounting_dimensions_section-hidden,Landed Cost Taxes and Charges,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Lead-utm_analytics_section-hidden,Lead,utm_analytics_section,hidden,Site-owned; do not export
+Property Setter,Loyalty Program-accounting_dimensions_section-hidden,Loyalty Program,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Material Request-scan_barcode-hidden,Material Request,scan_barcode,hidden,Site-owned; do not export
+Property Setter,Material Request Item-accounting_dimensions_section-hidden,Material Request Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Mode of Payment-main-field_order,Mode of Payment,,field_order,Site-owned; do not export
+Property Setter,Opening Invoice Creation Tool-accounting_dimensions_section-hidden,Opening Invoice Creation Tool,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Opening Invoice Creation Tool Item-accounting_dimensions_section-hidden,Opening Invoice Creation Tool Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Opportunity-utm_analytics_section-hidden,Opportunity,utm_analytics_section,hidden,Site-owned; do not export
+Property Setter,Packed Item-rate-read_only,Packed Item,rate,read_only,Site-owned; do not export
+Property Setter,Payment Entry-accounting_dimensions_section-hidden,Payment Entry,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Payment Entry Deduction-accounting_dimensions_section-hidden,Payment Entry Deduction,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Payment Ledger Entry-accounting_dimensions_section-hidden,Payment Ledger Entry,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Payment Reconciliation-accounting_dimensions_section-hidden,Payment Reconciliation,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Payment Reconciliation Allocation-accounting_dimensions_section-hidden,Payment Reconciliation Allocation,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Payment Request-accounting_dimensions_section-hidden,Payment Request,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Payment Request-subscription_section-hidden,Payment Request,subscription_section,hidden,Site-owned; do not export
+Property Setter,Pick List-scan_barcode-hidden,Pick List,scan_barcode,hidden,Site-owned; do not export
+Property Setter,POS Invoice-main-default_print_format,POS Invoice,,default_print_format,Site-owned; do not export
+Property Setter,POS Invoice-main-field_order,POS Invoice,,field_order,Site-owned; do not export
+Property Setter,POS Invoice-accounting_dimensions_section-hidden,POS Invoice,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,POS Invoice-loyalty_points_redemption-hidden,POS Invoice,loyalty_points_redemption,hidden,Site-owned; do not export
+Property Setter,POS Invoice-naming_series-options,POS Invoice,naming_series,options,Site-owned; do not export
+Property Setter,POS Invoice-scan_barcode-hidden,POS Invoice,scan_barcode,hidden,Site-owned; do not export
+Property Setter,POS Invoice-subscription_section-hidden,POS Invoice,subscription_section,hidden,Site-owned; do not export
+Property Setter,POS Invoice-utm_analytics_section-hidden,POS Invoice,utm_analytics_section,hidden,Site-owned; do not export
+Property Setter,POS Invoice Item-accounting_dimensions_section-hidden,POS Invoice Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,POS Invoice Item-barcode-hidden,POS Invoice Item,barcode,hidden,Site-owned; do not export
+Property Setter,POS Invoice Item-discount_and_margin-hidden,POS Invoice Item,discount_and_margin,hidden,Site-owned; do not export
+Property Setter,POS Profile-main-field_order,POS Profile,,field_order,Site-owned; do not export
+Property Setter,POS Profile-accounting_dimensions_section-hidden,POS Profile,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,POS Profile-utm_analytics_section-hidden,POS Profile,utm_analytics_section,hidden,Site-owned; do not export
+Property Setter,Purchase Invoice-main-default_print_format,Purchase Invoice,,default_print_format,Site-owned; do not export
+Property Setter,Purchase Invoice-accounting_dimensions_section-hidden,Purchase Invoice,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Purchase Invoice-base_rounded_total-hidden,Purchase Invoice,base_rounded_total,hidden,Site-owned; do not export
+Property Setter,Purchase Invoice-base_rounded_total-print_hide,Purchase Invoice,base_rounded_total,print_hide,Site-owned; do not export
+Property Setter,Purchase Invoice-disable_rounded_total-default,Purchase Invoice,disable_rounded_total,default,Site-owned; do not export
+Property Setter,Purchase Invoice-in_words-hidden,Purchase Invoice,in_words,hidden,Site-owned; do not export
+Property Setter,Purchase Invoice-in_words-print_hide,Purchase Invoice,in_words,print_hide,Site-owned; do not export
+Property Setter,Purchase Invoice-rounded_total-hidden,Purchase Invoice,rounded_total,hidden,Site-owned; do not export
+Property Setter,Purchase Invoice-rounded_total-print_hide,Purchase Invoice,rounded_total,print_hide,Site-owned; do not export
+Property Setter,Purchase Invoice-scan_barcode-hidden,Purchase Invoice,scan_barcode,hidden,Site-owned; do not export
+Property Setter,Purchase Invoice-subscription_section-hidden,Purchase Invoice,subscription_section,hidden,Site-owned; do not export
+Property Setter,Purchase Invoice Item-accounting_dimensions_section-hidden,Purchase Invoice Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Purchase Order-main-default_print_format,Purchase Order,,default_print_format,Site-owned; do not export
+Property Setter,Purchase Order-accounting_dimensions_section-hidden,Purchase Order,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Purchase Order-base_rounded_total-hidden,Purchase Order,base_rounded_total,hidden,Site-owned; do not export
+Property Setter,Purchase Order-base_rounded_total-print_hide,Purchase Order,base_rounded_total,print_hide,Site-owned; do not export
+Property Setter,Purchase Order-disable_rounded_total-default,Purchase Order,disable_rounded_total,default,Site-owned; do not export
+Property Setter,Purchase Order-in_words-hidden,Purchase Order,in_words,hidden,Site-owned; do not export
+Property Setter,Purchase Order-in_words-print_hide,Purchase Order,in_words,print_hide,Site-owned; do not export
+Property Setter,Purchase Order-rounded_total-hidden,Purchase Order,rounded_total,hidden,Site-owned; do not export
+Property Setter,Purchase Order-rounded_total-print_hide,Purchase Order,rounded_total,print_hide,Site-owned; do not export
+Property Setter,Purchase Order-scan_barcode-hidden,Purchase Order,scan_barcode,hidden,Site-owned; do not export
+Property Setter,Purchase Order Item-accounting_dimensions_section-hidden,Purchase Order Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Purchase Receipt-accounting_dimensions_section-hidden,Purchase Receipt,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Purchase Receipt-base_rounded_total-hidden,Purchase Receipt,base_rounded_total,hidden,Site-owned; do not export
+Property Setter,Purchase Receipt-base_rounded_total-print_hide,Purchase Receipt,base_rounded_total,print_hide,Site-owned; do not export
+Property Setter,Purchase Receipt-disable_rounded_total-default,Purchase Receipt,disable_rounded_total,default,Site-owned; do not export
+Property Setter,Purchase Receipt-in_words-hidden,Purchase Receipt,in_words,hidden,Site-owned; do not export
+Property Setter,Purchase Receipt-in_words-print_hide,Purchase Receipt,in_words,print_hide,Site-owned; do not export
+Property Setter,Purchase Receipt-rounded_total-hidden,Purchase Receipt,rounded_total,hidden,Site-owned; do not export
+Property Setter,Purchase Receipt-rounded_total-print_hide,Purchase Receipt,rounded_total,print_hide,Site-owned; do not export
+Property Setter,Purchase Receipt-scan_barcode-hidden,Purchase Receipt,scan_barcode,hidden,Site-owned; do not export
+Property Setter,Purchase Receipt Item-accounting_dimensions_section-hidden,Purchase Receipt Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Purchase Receipt Item-barcode-hidden,Purchase Receipt Item,barcode,hidden,Site-owned; do not export
+Property Setter,Purchase Taxes and Charges-accounting_dimensions_section-hidden,Purchase Taxes and Charges,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Quotation-main-default_print_format,Quotation,,default_print_format,Site-owned; do not export
+Property Setter,Quotation-base_rounded_total-hidden,Quotation,base_rounded_total,hidden,Site-owned; do not export
+Property Setter,Quotation-base_rounded_total-print_hide,Quotation,base_rounded_total,print_hide,Site-owned; do not export
+Property Setter,Quotation-disable_rounded_total-default,Quotation,disable_rounded_total,default,Site-owned; do not export
+Property Setter,Quotation-in_words-hidden,Quotation,in_words,hidden,Site-owned; do not export
+Property Setter,Quotation-in_words-print_hide,Quotation,in_words,print_hide,Site-owned; do not export
+Property Setter,Quotation-rounded_total-hidden,Quotation,rounded_total,hidden,Site-owned; do not export
+Property Setter,Quotation-rounded_total-print_hide,Quotation,rounded_total,print_hide,Site-owned; do not export
+Property Setter,Quotation-scan_barcode-hidden,Quotation,scan_barcode,hidden,Site-owned; do not export
+Property Setter,Quotation-utm_analytics_section-hidden,Quotation,utm_analytics_section,hidden,Site-owned; do not export
+Property Setter,Quotation Item-discount_and_margin-hidden,Quotation Item,discount_and_margin,hidden,Site-owned; do not export
+Property Setter,Request for Quotation-main-default_print_format,Request for Quotation,,default_print_format,Site-owned; do not export
+Property Setter,Salary Slip-rounded_total-hidden,Salary Slip,rounded_total,hidden,Site-owned; do not export
+Property Setter,Salary Slip-rounded_total-print_hide,Salary Slip,rounded_total,print_hide,Site-owned; do not export
+Property Setter,Sales Invoice-main-default_print_format,Sales Invoice,,default_print_format,Site-owned; do not export
+Property Setter,Sales Invoice-main-field_order,Sales Invoice,,field_order,Site-owned; do not export
+Property Setter,Sales Invoice-accounting_dimensions_section-hidden,Sales Invoice,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Sales Invoice-additional_discount_section-hidden,Sales Invoice,additional_discount_section,hidden,Site-owned; do not export
+Property Setter,Sales Invoice-commission_section-hidden,Sales Invoice,commission_section,hidden,Site-owned; do not export
+Property Setter,Sales Invoice-in_words-hidden,Sales Invoice,in_words,hidden,Site-owned; do not export
+Property Setter,Sales Invoice-loyalty_points_redemption-hidden,Sales Invoice,loyalty_points_redemption,hidden,Site-owned; do not export
+Property Setter,Sales Invoice-naming_series-options,Sales Invoice,naming_series,options,Site-owned; do not export
+Property Setter,Sales Invoice-rounded_total-hidden,Sales Invoice,rounded_total,hidden,Site-owned; do not export
+Property Setter,Sales Invoice-rounded_total-print_hide,Sales Invoice,rounded_total,print_hide,Site-owned; do not export
+Property Setter,Sales Invoice-sales_team_section-hidden,Sales Invoice,sales_team_section,hidden,Site-owned; do not export
+Property Setter,Sales Invoice-scan_barcode-hidden,Sales Invoice,scan_barcode,hidden,Site-owned; do not export
+Property Setter,Sales Invoice-subscription_section-hidden,Sales Invoice,subscription_section,hidden,Site-owned; do not export
+Property Setter,Sales Invoice-tax_id-hidden,Sales Invoice,tax_id,hidden,Site-owned; do not export
+Property Setter,Sales Invoice-tax_id-print_hide,Sales Invoice,tax_id,print_hide,Site-owned; do not export
+Property Setter,Sales Invoice-update_outstanding_for_self-default,Sales Invoice,update_outstanding_for_self,default,Site-owned; do not export
+Property Setter,Sales Invoice-utm_analytics_section-hidden,Sales Invoice,utm_analytics_section,hidden,Site-owned; do not export
+Property Setter,Sales Invoice Item-main-field_order,Sales Invoice Item,,field_order,Site-owned; do not export
+Property Setter,Sales Invoice Item-accounting_dimensions_section-hidden,Sales Invoice Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Sales Invoice Item-barcode-hidden,Sales Invoice Item,barcode,hidden,Site-owned; do not export
+Property Setter,Sales Invoice Item-discount_account-hidden,Sales Invoice Item,discount_account,hidden,Site-owned; do not export
+Property Setter,Sales Invoice Item-discount_account-mandatory_depends_on,Sales Invoice Item,discount_account,mandatory_depends_on,Site-owned; do not export
+Property Setter,Sales Invoice Item-discount_and_margin-hidden,Sales Invoice Item,discount_and_margin,hidden,Site-owned; do not export
+Property Setter,Sales Invoice Item-target_warehouse-hidden,Sales Invoice Item,target_warehouse,hidden,Site-owned; do not export
+Property Setter,Sales Order-main-default_print_format,Sales Order,,default_print_format,Site-owned; do not export
+Property Setter,Sales Order-accounting_dimensions_section-hidden,Sales Order,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Sales Order-additional_discount_section-hidden,Sales Order,additional_discount_section,hidden,Site-owned; do not export
+Property Setter,Sales Order-base_rounded_total-hidden,Sales Order,base_rounded_total,hidden,Site-owned; do not export
+Property Setter,Sales Order-base_rounded_total-print_hide,Sales Order,base_rounded_total,print_hide,Site-owned; do not export
+Property Setter,Sales Order-disable_rounded_total-default,Sales Order,disable_rounded_total,default,Site-owned; do not export
+Property Setter,Sales Order-in_words-hidden,Sales Order,in_words,hidden,Site-owned; do not export
+Property Setter,Sales Order-in_words-print_hide,Sales Order,in_words,print_hide,Site-owned; do not export
+Property Setter,Sales Order-loyalty_points_redemption-hidden,Sales Order,loyalty_points_redemption,hidden,Site-owned; do not export
+Property Setter,Sales Order-rounded_total-hidden,Sales Order,rounded_total,hidden,Site-owned; do not export
+Property Setter,Sales Order-rounded_total-print_hide,Sales Order,rounded_total,print_hide,Site-owned; do not export
+Property Setter,Sales Order-scan_barcode-hidden,Sales Order,scan_barcode,hidden,Site-owned; do not export
+Property Setter,Sales Order-tax_id-hidden,Sales Order,tax_id,hidden,Site-owned; do not export
+Property Setter,Sales Order-tax_id-print_hide,Sales Order,tax_id,print_hide,Site-owned; do not export
+Property Setter,Sales Order-utm_analytics_section-hidden,Sales Order,utm_analytics_section,hidden,Site-owned; do not export
+Property Setter,Sales Order Item-main-field_order,Sales Order Item,,field_order,Site-owned; do not export
+Property Setter,Sales Order Item-accounting_dimensions_section-hidden,Sales Order Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Sales Order Item-discount_and_margin-hidden,Sales Order Item,discount_and_margin,hidden,Site-owned; do not export
+Property Setter,Sales Taxes and Charges-accounting_dimensions_section-hidden,Sales Taxes and Charges,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Shipping Rule-accounting_dimensions_section-hidden,Shipping Rule,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Stock Entry-accounting_dimensions_section-hidden,Stock Entry,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Stock Entry-scan_barcode-hidden,Stock Entry,scan_barcode,hidden,Site-owned; do not export
+Property Setter,Stock Entry Detail-accounting_dimensions_section-hidden,Stock Entry Detail,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Stock Entry Detail-barcode-hidden,Stock Entry Detail,barcode,hidden,Site-owned; do not export
+Property Setter,Stock Reconciliation-accounting_dimensions_section-hidden,Stock Reconciliation,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Stock Reconciliation-scan_barcode-hidden,Stock Reconciliation,scan_barcode,hidden,Site-owned; do not export
+Property Setter,Stock Reconciliation Item-barcode-hidden,Stock Reconciliation Item,barcode,hidden,Site-owned; do not export
+Property Setter,Subcontracting Order-accounting_dimensions_section-hidden,Subcontracting Order,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Subcontracting Order Item-accounting_dimensions_section-hidden,Subcontracting Order Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Subcontracting Receipt-accounting_dimensions_section-hidden,Subcontracting Receipt,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Subcontracting Receipt Item-accounting_dimensions_section-hidden,Subcontracting Receipt Item,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Subscription-accounting_dimensions_section-hidden,Subscription,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Subscription Plan-accounting_dimensions_section-hidden,Subscription Plan,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Supplier-naming_series-hidden,Supplier,naming_series,hidden,Site-owned; do not export
+Property Setter,Supplier-naming_series-reqd,Supplier,naming_series,reqd,Site-owned; do not export
+Property Setter,Supplier Quotation-accounting_dimensions_section-hidden,Supplier Quotation,accounting_dimensions_section,hidden,Site-owned; do not export
+Property Setter,Supplier Quotation-base_rounded_total-hidden,Supplier Quotation,base_rounded_total,hidden,Site-owned; do not export
+Property Setter,Supplier Quotation-base_rounded_total-print_hide,Supplier Quotation,base_rounded_total,print_hide,Site-owned; do not export
+Property Setter,Supplier Quotation-disable_rounded_total-default,Supplier Quotation,disable_rounded_total,default,Site-owned; do not export
+Property Setter,Supplier Quotation-in_words-hidden,Supplier Quotation,in_words,hidden,Site-owned; do not export
+Property Setter,Supplier Quotation-in_words-print_hide,Supplier Quotation,in_words,print_hide,Site-owned; do not export
+Property Setter,Supplier Quotation-rounded_total-hidden,Supplier Quotation,rounded_total,hidden,Site-owned; do not export
+Property Setter,Supplier Quotation-rounded_total-print_hide,Supplier Quotation,rounded_total,print_hide,Site-owned; do not export
+Property Setter,Supplier Quotation Item-accounting_dimensions_section-hidden,Supplier Quotation Item,accounting_dimensions_section,hidden,Site-owned; do not export

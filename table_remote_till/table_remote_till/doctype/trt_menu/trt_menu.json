@@ -1,0 +1,85 @@
+{
+ "doctype": "DocType",
+ "name": "TRT Menu",
+ "module": "Table Remote Till",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "istable": 0,
+ "field_order": [
+  "title",
+  "outlet",
+  "items",
+  "show_on_till",
+  "show_on_kiosk",
+  "show_on_menu",
+  "enabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "outlet",
+   "fieldtype": "Link",
+   "label": "Outlet",
+   "options": "TRT Outlet",
+   "reqd": 1
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "TRT Menu Entry"
+  },
+  {
+   "fieldname": "show_on_till",
+   "fieldtype": "Check",
+   "label": "Show On Till",
+   "default": "1"
+  },
+  {
+   "fieldname": "show_on_kiosk",
+   "fieldtype": "Check",
+   "label": "Show On Kiosk"
+  },
+  {
+   "fieldname": "show_on_menu",
+   "fieldtype": "Check",
+   "label": "Show On Menu"
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "TRT Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

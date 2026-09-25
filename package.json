@@ -1,0 +1,16 @@
+{
+  "name": "table_remote_till",
+  "version": "0.1.0",
+  "description": "Multichannel POS and ERP operations",
+  "main": "index.js",
+  "scripts": {
+    "test": "cd gateway && npm test",
+    "postinstall": "(cd till && yarn install) && (cd kitchen && yarn install) && (cd kiosk && yarn install) && (cd menu && yarn install)",
+    "build": "(cd till && yarn build) && (cd kitchen && yarn build) && (cd kiosk && yarn build) && (cd menu && yarn build)",
+    "dev": "(cd till && yarn dev) & (cd kitchen && yarn dev) & (cd kiosk && yarn dev) & (cd menu && yarn dev) & wait"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

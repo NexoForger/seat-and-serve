@@ -1,0 +1,11 @@
+{
+  "id": "/kiosk",
+  "name": "Table Remote Till kiosk",
+  "short_name": "TRT kiosk",
+  "start_url": "/kiosk",
+  "scope": "/kiosk",
+  "display": "standalone",
+  "background_color": "#f2f5f9",
+  "theme_color": "#142239",
+  "icons": [{"src": "/assets/table_remote_till/kiosk/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]
+}

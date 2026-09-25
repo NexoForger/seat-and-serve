@@ -1,0 +1,76 @@
+{
+ "doctype": "DocType",
+ "name": "TRT Menu Entry",
+ "module": "Table Remote Till",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "istable": 1,
+ "field_order": [
+  "item",
+  "category",
+  "name_en",
+  "name_ar",
+  "price_override",
+  "modifier_group",
+  "station",
+  "available",
+  "sort_order"
+ ],
+ "fields": [
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "label": "Category",
+   "options": "Item Group"
+  },
+  {
+   "fieldname": "name_en",
+   "fieldtype": "Data",
+   "label": "Name En"
+  },
+  {
+   "fieldname": "name_ar",
+   "fieldtype": "Data",
+   "label": "Name Ar"
+  },
+  {
+   "fieldname": "price_override",
+   "fieldtype": "Currency",
+   "label": "Price Override"
+  },
+  {
+   "fieldname": "modifier_group",
+   "fieldtype": "Link",
+   "label": "Modifier Group",
+   "options": "TRT Modifier Group"
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Station",
+   "options": "TRT Kitchen Station"
+  },
+  {
+   "fieldname": "available",
+   "fieldtype": "Check",
+   "label": "Available",
+   "default": "1"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order"
+  }
+ ],
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

@@ -1,0 +1,117 @@
+{
+ "doctype": "DocType",
+ "name": "TRT Legacy Record",
+ "module": "Table Remote Till",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "istable": 0,
+ "field_order": [
+  "source",
+  "record_type",
+  "source_id",
+  "source_key",
+  "job",
+  "frappe_doctype",
+  "frappe_name",
+  "source_date",
+  "branch",
+  "amount",
+  "status",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source",
+   "reqd": 1
+  },
+  {
+   "fieldname": "record_type",
+   "fieldtype": "Data",
+   "label": "Record Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_id",
+   "fieldtype": "Data",
+   "label": "Source Id",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "unique": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "label": "Job",
+   "options": "TRT Import Job",
+   "reqd": 1
+  },
+  {
+   "fieldname": "frappe_doctype",
+   "fieldtype": "Data",
+   "label": "Frappe Doctype"
+  },
+  {
+   "fieldname": "frappe_name",
+   "fieldtype": "Data",
+   "label": "Frappe Name"
+  },
+  {
+   "fieldname": "source_date",
+   "fieldtype": "Date",
+   "label": "Source Date"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "label": "Branch"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Staged\nImported\nUnavailable\nFailed",
+   "default": "Staged"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "TRT Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

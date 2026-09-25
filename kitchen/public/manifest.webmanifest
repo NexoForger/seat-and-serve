@@ -1,0 +1,11 @@
+{
+  "id": "/kitchen",
+  "name": "Table Remote Till kitchen",
+  "short_name": "TRT kitchen",
+  "start_url": "/kitchen",
+  "scope": "/kitchen",
+  "display": "standalone",
+  "background_color": "#f2f5f9",
+  "theme_color": "#142239",
+  "icons": [{"src": "/assets/table_remote_till/kitchen/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]
+}

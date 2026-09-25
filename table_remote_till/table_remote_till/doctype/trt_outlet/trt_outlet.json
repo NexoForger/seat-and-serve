@@ -1,0 +1,176 @@
+{
+ "doctype": "DocType",
+ "name": "TRT Outlet",
+ "module": "Table Remote Till",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "istable": 0,
+ "field_order": [
+  "title",
+  "company",
+  "branch",
+  "warehouse",
+  "pos_profile",
+  "price_list",
+  "walk_in_customer",
+  "receivable_account",
+  "tax_template",
+  "base_currency",
+  "cash_currency",
+  "enable_tables",
+  "enable_tabs",
+  "enable_takeaway",
+  "enable_retail",
+  "enable_kiosk",
+  "enable_qr",
+  "enable_pickup",
+  "enabled",
+  "online_provider",
+  "allow_sandbox_payments"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "Pos Profile",
+   "options": "POS Profile"
+  },
+  {
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "label": "Price List",
+   "options": "Price List"
+  },
+  {
+   "fieldname": "walk_in_customer",
+   "fieldtype": "Link",
+   "label": "Walk In Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "receivable_account",
+   "fieldtype": "Link",
+   "label": "Receivable Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "tax_template",
+   "fieldtype": "Link",
+   "label": "Tax Template",
+   "options": "Sales Taxes and Charges Template"
+  },
+  {
+   "fieldname": "base_currency",
+   "fieldtype": "Link",
+   "label": "Base Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "cash_currency",
+   "fieldtype": "Link",
+   "label": "Cash Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "enable_tables",
+   "fieldtype": "Check",
+   "label": "Enable Tables"
+  },
+  {
+   "fieldname": "enable_tabs",
+   "fieldtype": "Check",
+   "label": "Enable Tabs"
+  },
+  {
+   "fieldname": "enable_takeaway",
+   "fieldtype": "Check",
+   "label": "Enable Takeaway"
+  },
+  {
+   "fieldname": "enable_retail",
+   "fieldtype": "Check",
+   "label": "Enable Retail"
+  },
+  {
+   "fieldname": "enable_kiosk",
+   "fieldtype": "Check",
+   "label": "Enable Kiosk"
+  },
+  {
+   "fieldname": "enable_qr",
+   "fieldtype": "Check",
+   "label": "Enable Qr"
+  },
+  {
+   "fieldname": "enable_pickup",
+   "fieldtype": "Check",
+   "label": "Enable Pickup"
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1"
+  },
+  {
+   "fieldname": "online_provider",
+   "fieldtype": "Data",
+   "label": "Online Provider"
+  },
+  {
+   "fieldname": "allow_sandbox_payments",
+   "fieldtype": "Check",
+   "label": "Allow Sandbox Payments"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "TRT Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

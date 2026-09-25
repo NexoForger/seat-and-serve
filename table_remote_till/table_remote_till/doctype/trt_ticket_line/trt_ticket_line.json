@@ -1,0 +1,42 @@
+{
+ "doctype": "DocType",
+ "name": "TRT Ticket Line",
+ "module": "Table Remote Till",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "istable": 1,
+ "field_order": [
+  "order_line",
+  "item",
+  "qty",
+  "note"
+ ],
+ "fields": [
+  {
+   "fieldname": "order_line",
+   "fieldtype": "Data",
+   "label": "Order Line"
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "label": "Qty",
+   "reqd": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  }
+ ],
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

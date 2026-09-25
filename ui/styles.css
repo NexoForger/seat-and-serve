@@ -1,0 +1,39 @@
+:root { font-family: Inter, system-ui, sans-serif; color: #142239; background: #f2f5f9; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 1rem 1.5rem;
+  color: white; background: #142239; }
+.topbar h1 { margin: 0 1rem 0 0; font-size: 1.25rem; }
+.topbar select, .topbar button { border: 1px solid #75839a; border-radius: .5rem; padding: .45rem .65rem; }
+.topbar button { color: white; background: transparent; }
+.spacer { flex: 1; }
+.content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(18rem, 23rem); gap: 1rem;
+  padding: 1rem; max-width: 1600px; width: 100%; margin: auto; align-items: start; }
+.panel { background: white; border: 1px solid #e1e7ef; border-radius: 1rem; padding: 1.25rem;
+  box-shadow: 0 8px 30px #1c2d4c0c; }
+.panel h2 { margin: 0 0 1rem; font-size: 1.15rem; }
+.row { display: flex; align-items: center; gap: .6rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .75rem; }
+.item { display: grid; gap: .4rem; min-height: 6rem; text-align: start; padding: .85rem;
+  border: 1px solid #d6deea; border-radius: .75rem; color: #142239; background: #f9fbfd; }
+.item:hover { border-color: #087e8b; background: #effbfb; }
+.item strong { font-size: 1rem; }
+.item small { color: #52657b; }
+.primary { background: #087e8b; color: white; border: 0; border-radius: .6rem; padding: .7rem 1rem; }
+.primary:disabled { opacity: .45; cursor: not-allowed; }
+.ghost { color: #142239; background: white; border: 1px solid #cbd5e1; border-radius: .6rem; padding: .5rem .75rem; }
+.status { padding: .7rem 1rem; border-radius: .6rem; margin: .6rem 0; background: #e9f4ff; }
+.status.error { background: #fff1ef; color: #9a2922; }
+.muted { color: #69798d; }
+.line { display: flex; justify-content: space-between; gap: .7rem; padding: .7rem 0; border-bottom: 1px solid #eef1f5; }
+.totals { margin-top: 1rem; display: grid; gap: .4rem; }
+.totals div { display: flex; justify-content: space-between; }
+.totals strong { font-size: 1.2rem; }
+.stack { display: grid; gap: .8rem; }
+.field { display: grid; gap: .3rem; }
+.field input, .field select { padding: .65rem; border: 1px solid #cbd5e1; border-radius: .5rem; min-width: 0; }
+[dir=rtl] .item { text-align: right; }
+@media (max-width: 760px) { .content { grid-template-columns: 1fr; padding: .6rem; } .topbar { padding: .8rem; } }

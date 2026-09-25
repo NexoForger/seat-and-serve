@@ -1,0 +1,25 @@
+{
+  "name": "menu",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --base=/assets/table_remote_till/menu/ && yarn copy-html-entry",
+    "preview": "vite preview",
+    "copy-html-entry": "cp ../table_remote_till/public/menu/index.html ../table_remote_till/www/menu.html"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.5.1",
+    "vue": "^3.5.42",
+    "vue-router": "^4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/tsconfig": "^0.9.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vue-tsc": "^3.3.11"
+  }
+}

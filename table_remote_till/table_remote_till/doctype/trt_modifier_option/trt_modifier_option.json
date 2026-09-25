@@ -1,0 +1,55 @@
+{
+ "doctype": "DocType",
+ "name": "TRT Modifier Option",
+ "module": "Table Remote Till",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "istable": 1,
+ "field_order": [
+  "item",
+  "name_en",
+  "name_ar",
+  "price_delta",
+  "ingredient_item",
+  "ingredient_qty"
+ ],
+ "fields": [
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "name_en",
+   "fieldtype": "Data",
+   "label": "Name En"
+  },
+  {
+   "fieldname": "name_ar",
+   "fieldtype": "Data",
+   "label": "Name Ar"
+  },
+  {
+   "fieldname": "price_delta",
+   "fieldtype": "Currency",
+   "label": "Price Delta"
+  },
+  {
+   "fieldname": "ingredient_item",
+   "fieldtype": "Link",
+   "label": "Ingredient Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "ingredient_qty",
+   "fieldtype": "Float",
+   "label": "Ingredient Qty"
+  }
+ ],
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

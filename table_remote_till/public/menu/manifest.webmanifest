@@ -1,0 +1,11 @@
+{
+  "id": "/menu",
+  "name": "Table Remote Till menu",
+  "short_name": "TRT menu",
+  "start_url": "/menu",
+  "scope": "/menu",
+  "display": "standalone",
+  "background_color": "#f2f5f9",
+  "theme_color": "#142239",
+  "icons": [{"src": "/assets/table_remote_till/menu/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]
+}

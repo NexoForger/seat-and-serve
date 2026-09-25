@@ -1,0 +1,101 @@
+{
+ "doctype": "DocType",
+ "name": "TRT Import Job",
+ "module": "Table Remote Till",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "istable": 0,
+ "field_order": [
+  "source",
+  "record_type",
+  "status",
+  "source_file",
+  "mapping_json",
+  "preview_json",
+  "report_json",
+  "imported_count",
+  "error_count"
+ ],
+ "fields": [
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Omega POS\nSquirrel Cloud\nSquirrel 11\nGeneric",
+   "reqd": 1
+  },
+  {
+   "fieldname": "record_type",
+   "fieldtype": "Select",
+   "label": "Record Type",
+   "options": "Item\nCustomer\nSupplier\nSale\nReturn\nPayment\nPurchase\nStock\nJournal\nEmployee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Uploaded\nMapped\nValidated\nImporting\nComplete\nFailed",
+   "default": "Uploaded"
+  },
+  {
+   "fieldname": "source_file",
+   "fieldtype": "Attach",
+   "label": "Source File"
+  },
+  {
+   "fieldname": "mapping_json",
+   "fieldtype": "Code",
+   "label": "Mapping Json",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "preview_json",
+   "fieldtype": "Code",
+   "label": "Preview Json",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "report_json",
+   "fieldtype": "Code",
+   "label": "Report Json",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "imported_count",
+   "fieldtype": "Int",
+   "label": "Imported Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error_count",
+   "fieldtype": "Int",
+   "label": "Error Count",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "TRT Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

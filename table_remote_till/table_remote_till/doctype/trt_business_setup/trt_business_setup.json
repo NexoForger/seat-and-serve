@@ -1,0 +1,109 @@
+{
+ "doctype": "DocType",
+ "name": "TRT Business Setup",
+ "module": "Table Remote Till",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "istable": 0,
+ "field_order": [
+  "company",
+  "business_type",
+  "country",
+  "base_currency",
+  "cash_currency",
+  "tax_approved_by",
+  "tax_approved_on",
+  "payroll_approved_by",
+  "payroll_approved_on",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "business_type",
+   "fieldtype": "Select",
+   "label": "Business Type",
+   "options": "Restaurant/Pub\nRetail\nMixed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country",
+   "default": "Lebanon"
+  },
+  {
+   "fieldname": "base_currency",
+   "fieldtype": "Link",
+   "label": "Base Currency",
+   "options": "Currency",
+   "default": "USD"
+  },
+  {
+   "fieldname": "cash_currency",
+   "fieldtype": "Link",
+   "label": "Cash Currency",
+   "options": "Currency",
+   "default": "LBP"
+  },
+  {
+   "fieldname": "tax_approved_by",
+   "fieldtype": "Link",
+   "label": "Tax Approved By",
+   "options": "User"
+  },
+  {
+   "fieldname": "tax_approved_on",
+   "fieldtype": "Datetime",
+   "label": "Tax Approved On"
+  },
+  {
+   "fieldname": "payroll_approved_by",
+   "fieldtype": "Link",
+   "label": "Payroll Approved By",
+   "options": "User"
+  },
+  {
+   "fieldname": "payroll_approved_on",
+   "fieldtype": "Datetime",
+   "label": "Payroll Approved On"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "TRT Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

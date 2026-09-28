@@ -41,6 +41,40 @@ def _manager():
 		frappe.throw("Manager role required", frappe.PermissionError)
 
 
+@frappe.whitelist(methods=["POST"])
+def new_job(source, record_type):
+	"""Create an import job directly from the onboarding wizard."""
+	_manager()
+	if source not in {"Omega POS", "Squirrel Cloud", "Squirrel 11", "Generic"}:
+		frappe.throw("Choose a supported source")
+	if record_type not in ALL_TYPES:
+		frappe.throw("Choose a supported record type")
+	job = frappe.get_doc({"doctype": "TRT Import Job", "source": source,
+		"record_type": record_type, "status": "Uploaded"}).insert(ignore_permissions=True)
+	return {"job": job.name, "import_supported": record_type in MASTER_FIELDS}
+
+
+@frappe.whitelist(methods=["POST"])
+def attach_export(job_name, file_name):
+	"""Accept only a private CSV/XLSX attached to this exact import job."""
+	_manager()
+	job = frappe.get_doc("TRT Import Job", job_name)
+	file = frappe.get_doc("File", file_name)
+	if not file.is_private or file.attached_to_doctype != job.doctype or file.attached_to_name != job.name:
+		frappe.throw("Upload a private export attached to this import job", frappe.PermissionError)
+	if not file.file_url or not file.file_url.lower().endswith((".csv", ".xlsx")):
+		frappe.throw("Only CSV and XLSX exports are supported")
+	if file.file_size and file.file_size > 20_000_000:
+		frappe.throw("Export exceeds 20 MB; split by period")
+	job.source_file = file.file_url
+	job.status = "Uploaded"
+	job.mapping_json = None
+	job.preview_json = None
+	job.report_json = None
+	job.save(ignore_permissions=True)
+	return {"job": job.name, "file_url": file.file_url}
+
+
 def _rows(job):
 	if not job.source_file:
 		frappe.throw("Attach a private CSV or XLSX export")

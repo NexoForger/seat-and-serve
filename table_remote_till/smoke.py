@@ -8,6 +8,7 @@ from frappe.utils.file_manager import save_file
 
 from table_remote_till import api
 from table_remote_till import migration
+from table_remote_till import onboarding
 
 
 def run():
@@ -159,13 +160,12 @@ def migration_run():
 	assert group and territory
 	file = None
 	try:
-		job = frappe.get_doc({"doctype": "TRT Import Job", "source": "Omega POS",
-			"record_type": "Customer", "status": "Uploaded"}).insert(ignore_permissions=True)
+		job = frappe.get_doc("TRT Import Job", migration.new_job("Omega POS", "Customer")["job"])
 		content = f"id,name,group,territory\nC-100,Migration Smoke,{group},{territory}\n".encode()
 		file = save_file(f"trt-smoke-{uuid.uuid4()}.csv", content, "TRT Import Job", job.name,
 			is_private=1)
-		job.source_file = file.file_url
-		job.save(ignore_permissions=True)
+		migration.attach_export(job.name, file.name)
+		assert migration.suggest_mapping(job.name)["mapping"]["source_id"] == "id"
 		mapping = {"source_id": "id", "name": "name", "customer_group": "group",
 			"territory": "territory"}
 		preview = migration.preview(job.name, json.dumps(mapping))
@@ -176,6 +176,92 @@ def migration_run():
 	finally:
 		if file:
 			file.delete(ignore_permissions=True)
+		frappe.db.rollback()
+
+
+def onboarding_run():
+	"""Exercise a fresh outlet, generated ERP masters, and idempotent replay."""
+	frappe.set_user("Administrator")
+	try:
+		choices = onboarding.options()
+		assert choices["companies"]
+		company = choices["company"]
+		name = f"TRT Smoke {uuid.uuid4().hex[:8]}"
+		config = {"company": company, "business_type": "Restaurant/Pub",
+			"outlet_title": name, "branch": name, "register_title": "Main Register",
+			"channels": ["Table", "Tab", "Takeaway", "Kiosk", "QR", "Pickup"],
+			"seed_sample_data": True,
+			"cash_mode": choices["defaults"]["cash_mode"],
+			"write_off_account": choices["defaults"]["write_off_account"],
+			"cost_center": choices["defaults"]["cost_center"]}
+		frappe.set_user("Guest")
+		try:
+			onboarding.preview_setup(config)
+		except frappe.PermissionError:
+			pass
+		else:
+			raise AssertionError("Guest could preview onboarding")
+		frappe.set_user("Administrator")
+		plan = onboarding.preview_setup(config)
+		assert any(row["label"] == "POS Profile" and row["action"] == "Create"
+			for row in plan["actions"])
+		request_id = str(uuid.uuid4())
+		result = onboarding.apply_setup(config, request_id)
+		assert frappe.db.exists("TRT Outlet", result["outlet"])
+		assert frappe.db.exists("TRT Register", result["register"])
+		assert frappe.db.exists("POS Profile", result["pos_profile"])
+		assert frappe.db.get_value("TRT Outlet", result["outlet"], "enable_qr") == 1
+		assert frappe.db.exists("TRT Table", {"outlet": result["outlet"], "title": "T1"})
+		assert frappe.db.count("TRT Menu Entry", {"parent": frappe.db.get_value(
+			"TRT Menu", {"outlet": result["outlet"]}, "name")}) == 3
+		assert onboarding.apply_setup(config, request_id) == result
+		assert frappe.db.count("TRT Onboarding Run", {"request_id": request_id}) == 1
+		return json.dumps({"outlet": result["outlet"], "created": len(result["created"]),
+			"replay_safe": True})
+	finally:
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+
+def workspace_run():
+	"""Confirm Desk exposes each parent record and embeds each child table."""
+	frappe.set_user("Administrator")
+	workspace = frappe.get_doc("Workspace", "Table Remote Till")
+	parents = set(frappe.get_all("DocType", filters={"module": "Table Remote Till",
+		"istable": 0}, pluck="name"))
+	children = set(frappe.get_all("DocType", filters={"module": "Table Remote Till",
+		"istable": 1}, pluck="name"))
+	linked = {row.link_to for row in workspace.links if row.type == "Link" and row.link_type == "DocType"}
+	assert parents == linked, {"missing": sorted(parents - linked), "extra": sorted(linked - parents)}
+	embedded = {field.options for parent in parents for field in frappe.get_meta(parent).fields
+		if field.fieldtype == "Table"}
+	assert children <= embedded, sorted(children - embedded)
+	assert any(row.type == "URL" and row.url == "/onboarding" for row in workspace.shortcuts)
+	return json.dumps({"parent_doctypes": len(parents), "child_tables": len(children),
+		"workspace": workspace.name})
+
+
+def onboarding_retail_run():
+	"""A retail-only site gets a saleable demo catalog without a floor plan."""
+	frappe.set_user("Administrator")
+	try:
+		choices = onboarding.options()
+		name = f"TRT Retail {uuid.uuid4().hex[:8]}"
+		config = {"company": choices["company"], "business_type": "Retail",
+			"outlet_title": name, "branch": name, "register_title": "Front Register",
+			"channels": ["Retail"], "seed_sample_data": True,
+			"cash_mode": choices["defaults"]["cash_mode"],
+			"write_off_account": choices["defaults"]["write_off_account"],
+			"cost_center": choices["defaults"]["cost_center"]}
+		result = onboarding.apply_setup(config, str(uuid.uuid4()))
+		outlet = frappe.get_doc("TRT Outlet", result["outlet"])
+		assert outlet.enable_retail and not outlet.enable_tables
+		assert not frappe.db.exists("TRT Service Area", {"outlet": outlet.name})
+		menu = frappe.get_doc("TRT Menu", frappe.db.get_value("TRT Menu", {"outlet": outlet.name}, "name"))
+		assert len(menu.items) == 3
+		assert all(frappe.db.get_value("Item", row.item, "is_stock_item") == 0 for row in menu.items)
+		return json.dumps({"outlet": outlet.name, "demo_items": len(menu.items)})
+	finally:
 		frappe.db.rollback()
 
 

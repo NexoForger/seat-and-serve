@@ -10,16 +10,13 @@ app_license = "mit"
 
 required_apps = ["frappe/erpnext", "frappe/hrms"]
 
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "table_remote_till",
-# 		"logo": "/assets/table_remote_till/logo.png",
-# 		"title": "Table Remote Till",
-# 		"route": "/table_remote_till",
-# 		"has_permission": "table_remote_till.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [{
+	"name": "table_remote_till",
+	"logo": "/assets/table_remote_till/images/table-remote-till.svg",
+	"title": "Table Remote Till",
+	"route": "/desk/table-remote-till",
+	"has_permission": "table_remote_till.install.has_app_permission",
+}]
 
 # Includes in <head>
 # ------------------

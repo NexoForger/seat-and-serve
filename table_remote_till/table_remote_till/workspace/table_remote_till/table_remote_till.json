@@ -1,0 +1,230 @@
+{
+ "doctype": "Workspace",
+ "name": "Table Remote Till",
+ "label": "Table Remote Till",
+ "title": "Table Remote Till",
+ "module": "Table Remote Till",
+ "app": "table_remote_till",
+ "type": "Workspace",
+ "icon": "selling",
+ "public": 1,
+ "is_hidden": 0,
+ "parent_page": "",
+ "sequence_id": 18.0,
+ "content": "[{\"id\":\"trt-shortcuts\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Start here</b></span>\",\"col\":12}},{\"id\":\"trt-shortcut-0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Guided onboarding\",\"col\":3}},{\"id\":\"trt-shortcut-1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Staff till\",\"col\":3}},{\"id\":\"trt-shortcut-2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Kitchen\",\"col\":3}},{\"id\":\"trt-shortcut-3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Kiosk\",\"col\":3}},{\"id\":\"trt-shortcut-4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Public menu\",\"col\":3}},{\"id\":\"trt-records\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>App records</b></span>\",\"col\":12}},{\"id\":\"trt-card-0\",\"type\":\"card\",\"data\":{\"card_name\":\"Business setup\",\"col\":4}},{\"id\":\"trt-card-1\",\"type\":\"card\",\"data\":{\"card_name\":\"Floor and devices\",\"col\":4}},{\"id\":\"trt-card-2\",\"type\":\"card\",\"data\":{\"card_name\":\"Catalog\",\"col\":4}},{\"id\":\"trt-card-3\",\"type\":\"card\",\"data\":{\"card_name\":\"Operations\",\"col\":4}},{\"id\":\"trt-card-4\",\"type\":\"card\",\"data\":{\"card_name\":\"Migration\",\"col\":4}}]",
+ "links": [
+  {
+   "type": "Card Break",
+   "label": "Business setup",
+   "hidden": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Business Setup",
+   "link_type": "DocType",
+   "link_to": "TRT Business Setup",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Onboarding Run",
+   "link_type": "DocType",
+   "link_to": "TRT Onboarding Run",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Outlet",
+   "link_type": "DocType",
+   "link_to": "TRT Outlet",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Register",
+   "link_type": "DocType",
+   "link_to": "TRT Register",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Staff Assignment",
+   "link_type": "DocType",
+   "link_to": "TRT Staff Assignment",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT FX Rate",
+   "link_type": "DocType",
+   "link_to": "TRT FX Rate",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Card Break",
+   "label": "Floor and devices",
+   "hidden": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Service Area",
+   "link_type": "DocType",
+   "link_to": "TRT Service Area",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Table",
+   "link_type": "DocType",
+   "link_to": "TRT Table",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Kitchen Station",
+   "link_type": "DocType",
+   "link_to": "TRT Kitchen Station",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Device",
+   "link_type": "DocType",
+   "link_to": "TRT Device",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Card Break",
+   "label": "Catalog",
+   "hidden": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Menu",
+   "link_type": "DocType",
+   "link_to": "TRT Menu",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Modifier Group",
+   "link_type": "DocType",
+   "link_to": "TRT Modifier Group",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Card Break",
+   "label": "Operations",
+   "hidden": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Order",
+   "link_type": "DocType",
+   "link_to": "TRT Order",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Kitchen Ticket",
+   "link_type": "DocType",
+   "link_to": "TRT Kitchen Ticket",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Payment Attempt",
+   "link_type": "DocType",
+   "link_to": "TRT Payment Attempt",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Sync Event",
+   "link_type": "DocType",
+   "link_to": "TRT Sync Event",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Card Break",
+   "label": "Migration",
+   "hidden": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Import Job",
+   "link_type": "DocType",
+   "link_to": "TRT Import Job",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "TRT Legacy Record",
+   "link_type": "DocType",
+   "link_to": "TRT Legacy Record",
+   "hidden": 0,
+   "onboard": 0
+  }
+ ],
+ "shortcuts": [
+  {
+   "type": "URL",
+   "label": "Guided onboarding",
+   "url": "/onboarding",
+   "color": "Blue"
+  },
+  {
+   "type": "URL",
+   "label": "Staff till",
+   "url": "/till",
+   "color": "Blue"
+  },
+  {
+   "type": "URL",
+   "label": "Kitchen",
+   "url": "/kitchen",
+   "color": "Blue"
+  },
+  {
+   "type": "URL",
+   "label": "Kiosk",
+   "url": "/kiosk",
+   "color": "Blue"
+  },
+  {
+   "type": "URL",
+   "label": "Public menu",
+   "url": "/menu",
+   "color": "Blue"
+  }
+ ],
+ "charts": [],
+ "number_cards": [],
+ "quick_lists": [],
+ "custom_blocks": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "TRT Manager"
+  }
+ ]
+}

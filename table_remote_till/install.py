@@ -6,6 +6,12 @@ import frappe
 ROLES = ("TRT Manager", "TRT Cashier", "TRT Kitchen")
 
 
+def has_app_permission():
+	return frappe.session.user != "Guest" and bool(
+		set(frappe.get_roles()).intersection({"System Manager", "TRT Manager"})
+	)
+
+
 def ensure_roles():
 	for role in ROLES:
 		if not frappe.db.exists("Role", role):

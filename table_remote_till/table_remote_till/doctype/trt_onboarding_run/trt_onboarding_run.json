@@ -1,0 +1,91 @@
+{
+ "doctype": "DocType",
+ "name": "TRT Onboarding Run",
+ "module": "Table Remote Till",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "istable": 0,
+ "field_order": [
+  "request_id",
+  "company",
+  "outlet",
+  "request_hash",
+  "status",
+  "result_json",
+  "run_by",
+  "run_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "Request Id",
+   "unique": 1,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "outlet",
+   "fieldtype": "Link",
+   "label": "Outlet",
+   "options": "TRT Outlet"
+  },
+  {
+   "fieldname": "request_hash",
+   "fieldtype": "Data",
+   "label": "Request Hash",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Applied",
+   "default": "Applied",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "result_json",
+   "fieldtype": "Code",
+   "label": "Result Json",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "run_by",
+   "fieldtype": "Link",
+   "label": "Run By",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "run_at",
+   "fieldtype": "Datetime",
+   "label": "Run At",
+   "reqd": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "TRT Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

@@ -1,37 +1,166 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Business onboarding · Table Remote Till</title>
 <style>
-body{font:16px system-ui;margin:0;background:#f2f5f9;color:#142239} header{background:#142239;color:white;padding:1rem 2rem}
-main{max-width:940px;margin:2rem auto;padding:0 1rem}section{background:white;border:1px solid #dce4ee;border-radius:1rem;padding:1.5rem;margin:1rem 0}
-li{padding:.7rem;border-bottom:1px solid #e7edf3}a{color:#087e8b}select,button{padding:.6rem;border-radius:.5rem;border:1px solid #b7c6d6}
-.ok{color:#147047}.todo{color:#a43e20}.muted{color:#61738a}
+:root{font-family:system-ui,-apple-system,sans-serif;color:#18324b;background:#f2f5f9}*{box-sizing:border-box}body{margin:0}
+header{background:#17324d;color:#fff;padding:1rem max(1rem,calc((100vw - 1100px)/2))}header a{color:#fff;text-decoration:none}
+main{max-width:1100px;margin:2rem auto;padding:0 1rem 3rem}h1{margin:.2rem 0}h2{margin-top:0;font-size:1.25rem}h3{font-size:1rem}
+p{line-height:1.5}.muted{color:#5c7185}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem}
+.panel{background:#fff;border:1px solid #dce4ec;border-radius:14px;padding:1.25rem;margin:1rem 0;box-shadow:0 2px 10px #18324b08}
+label{display:block;font-weight:600;font-size:.92rem}input,select{display:block;width:100%;margin:.35rem 0 0;padding:.68rem;border:1px solid #aabac9;border-radius:8px;background:#fff;color:#18324b;font:inherit}
+input[type=checkbox]{width:auto;display:inline-block;margin:0 .5rem 0 0;accent-color:#087e8b}.check{display:flex;align-items:flex-start;gap:.25rem;font-weight:500;margin:.7rem 0}
+button{border:0;background:#087e8b;color:#fff;border-radius:8px;padding:.75rem 1rem;font:inherit;font-weight:650;cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}
+.actions{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-top:1.2rem}.error{color:#9e332c}.success{color:#146a4a}
+.notice{background:#eef7fa;border-left:4px solid #087e8b;padding:.75rem 1rem;border-radius:6px}ol,ul{padding-left:1.3rem}li{padding:.25rem 0}a{color:#087e8b}
+.checks{columns:2;column-gap:2rem}.checks li{break-inside:avoid;padding:.4rem 0}.done{color:#146a4a}.todo{color:#9e5d22}
+.steps{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0}.steps span{background:#e4edf2;padding:.45rem .8rem;border-radius:100px;font-size:.85rem}
+.doctype-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.25rem 1.5rem}
+@media(max-width:650px){.checks{columns:1}header{padding:1rem}}
 </style></head><body>
-<header><strong>Table Remote Till · Business onboarding</strong></header>
-<main>
-<section><h1>Set up a business site</h1><p>Complete ERPNext setup first, then work through each linked area. Have the business approve its tax and payroll settings before a live rollout.</p>
-<label>Company <select id="company"></select></label> <button id="refresh">Refresh checks</button>
-<p id="progress" role="status"></p><ol id="checks"></ol></section>
-<section><h2>Import existing data</h2><p>Collect private CSV or Excel exports from Omega POS, Squirrel Cloud, Squirrel 11, or another source. Map and preview each file in an Import Job. Historical transaction import requires a source specific reconciled importer; the source inventory shows missing export categories.</p>
-<a href="/app/trt-import-job/new-trt-import-job">Create import job</a> · <a href="/app/trt-legacy-record">Source ID ledger</a></section>
-</main>
-<script>window.csrf_token = {{ csrf_token | tojson }};</script>
-<script>
-const selector=document.querySelector('#company');
-async function refresh(){
-  const url='/api/method/table_remote_till.onboarding.status'+(selector.value?'?company='+encodeURIComponent(selector.value):'');
-  const response=await fetch(url,{credentials:'same-origin'});
-  const data=await response.json();
-  if(!response.ok){document.querySelector('#progress').textContent='Could not load checks';return;}
-  const state=data.message;
-  if(!selector.options.length){for(const company of state.companies){const option=new Option(company,company);selector.add(option);}}
-  selector.value=state.company||'';
-  document.querySelector('#progress').textContent=`${state.ready_count} of ${state.total_count} checks ready`;
-  const list=document.querySelector('#checks');list.replaceChildren();
-  for(const step of state.steps){const li=document.createElement('li');const link=document.createElement('a');
-    link.href=step.route;link.textContent=step.label;const marker=document.createElement('strong');
-    marker.className=step.ready?'ok':'todo';marker.textContent=step.ready?' ✓ ':' · To do: ';
-    li.append(marker,link);list.append(li);}
-}
-selector.addEventListener('change',refresh);document.querySelector('#refresh').addEventListener('click',refresh);refresh();
+<header><strong><a href="/desk/table-remote-till">Table Remote Till</a></strong> · Business onboarding</header>
+<main><h1>Set up your business</h1><p class="muted">Create the outlet and its ERPNext POS records in one run. Review the exact changes before applying them. Each business uses its own Frappe site.</p>
+<div class="steps"><span>1 · Business</span><span>2 · POS setup</span><span>3 · Channels</span><span>4 · Preview and create</span><span>5 · Data and approvals</span></div>
+<div class="panel" id="company-needed" hidden><p>Start by creating an ERPNext Company and chart of accounts on this site.</p><a href="/app/company/new-company">Create Company</a></div>
+<form id="setup-form" autocomplete="off">
+<section class="panel"><h2>1 · Business and location</h2><div class="grid">
+<label>Company<select name="company" id="company" required></select></label>
+<label>Business type<select name="business_type" required><option>Restaurant/Pub</option><option>Retail</option><option>Mixed</option></select></label>
+<label>Outlet name<input name="outlet_title" placeholder="Downtown" maxlength="100" required></label>
+<label>Branch name<input name="branch" placeholder="Downtown" maxlength="100" required></label>
+<label>Register name<input name="register_title" value="Main Register" maxlength="100" required></label>
+</div></section>
+<section class="panel"><h2>2 · POS and accounting</h2><p class="muted">Leave warehouse, price list, walk-in customer, and POS Profile on “Create new” to generate them for this outlet.</p><div class="grid">
+<label>Warehouse<select name="warehouse" id="warehouse"></select></label>
+<label>Selling price list<select name="price_list" id="price_list"></select></label>
+<label>Walk-in customer<select name="customer" id="customer"></select></label>
+<label>POS Profile<select name="pos_profile" id="pos_profile"></select></label>
+<label>Cash mode<select name="cash_mode" id="cash_mode" required></select></label>
+<label>Write-off account<select name="write_off_account" id="write_off_account"></select></label>
+<label>Write-off cost center<select name="cost_center" id="cost_center"></select></label>
+<label>Sales tax template<select name="tax_template" id="tax_template"></select></label>
+</div><p class="muted">The selected tax template is reused; this flow does not invent tax rates or payroll rules.</p></section>
+<section class="panel"><h2>3 · Channels and currency</h2><div class="grid"><div><h3>Service channels</h3>
+<label class="check"><input type="checkbox" name="channel" value="Table" checked> Table service</label>
+<label class="check"><input type="checkbox" name="channel" value="Tab" checked> Pub tabs</label>
+<label class="check"><input type="checkbox" name="channel" value="Takeaway" checked> Takeaway</label>
+<label class="check"><input type="checkbox" name="channel" value="Retail"> Retail</label>
+<label class="check"><input type="checkbox" name="channel" value="Kiosk"> Kiosk</label>
+<label class="check"><input type="checkbox" name="channel" value="QR"> Table QR</label>
+<label class="check"><input type="checkbox" name="channel" value="Pickup"> Remote pickup</label>
+<label class="check"><input type="checkbox" name="seed_sample_data"> Seed sample items, prices, and a table</label>
+</div><div><h3>USD / LBP</h3>
+<label>Approved LBP per USD rate<input name="lbp_per_usd" type="number" min="0.000001" step="any" placeholder="Leave blank until approved"></label>
+<label class="check"><input type="checkbox" name="approve_fx_rate"> I approve this exchange rate for this outlet</label>
+<label class="check"><input type="checkbox" name="enable_lbp"> Enable LBP currency on this site</label>
+<label class="check"><input type="checkbox" name="set_pos_invoice_mode"> Set this site's POS mode to POS Invoice</label>
+</div></div></section>
+<section class="panel"><h2>4 · Review and create</h2><div class="notice">The run creates records only on this site. Sample items are non-stock and saleable for testing; remove them before live use. The run does not open a shift, post historical transactions, or approve tax and payroll settings.</div>
+<div class="actions"><button type="button" id="preview">Preview setup</button><button type="button" id="apply" disabled>Apply setup</button><span id="message" role="status"></span></div>
+<div id="plan" hidden><h3>Planned changes</h3><ol id="actions-list"></ol><h3>After setup</h3><ul id="remaining-list"></ul></div><div id="result" hidden></div></section>
+</form>
+<section class="panel"><h2>5 · Bring in existing data</h2><p class="muted">Upload a private CSV or Excel export, review suggested column mappings, then preview totals. Master records can be imported here. Historical exports are inventoried for a reconciled migration.</p>
+<div class="grid"><label>Previous system<select id="source"><option>Omega POS</option><option>Squirrel Cloud</option><option>Squirrel 11</option><option>Generic</option></select></label>
+<label>Record type<select id="record-type"><option>Item</option><option>Customer</option><option>Supplier</option><option>Sale</option><option>Return</option><option>Payment</option><option>Purchase</option><option>Stock</option><option>Journal</option><option>Employee</option></select></label>
+<label>Private CSV or XLSX export<input id="export-file" type="file" accept=".csv,.xlsx"></label></div>
+<div class="actions"><button type="button" id="upload-export">Upload and suggest mapping</button><span id="import-message" role="status"></span></div>
+<p id="job-link"></p><div id="mapping" hidden><h3>Column mapping</h3><div id="mapping-fields" class="grid"></div>
+<div class="actions"><button type="button" id="preview-import">Preview export</button><button type="button" id="import-masters" disabled>Import masters</button></div>
+<div id="import-report" aria-live="polite"></div></div></section>
+<section class="panel"><h2>Readiness and approvals</h2><p id="progress" role="status"></p><ol id="checks" class="checks"></ol>
+<p>Historical transaction categories remain in the <a href="/app/trt-legacy-record">source ledger</a> until reconciled import support is built.</p>
+<p>Business owners must approve their tax and payroll rules. Select a live Lebanon payment provider and actual device models before live rollout.</p></section>
+<section class="panel"><h2>App records</h2><p class="muted">All parent DocTypes are available in the Table Remote Till Desk workspace. Child tables open inside their parent forms.</p><div id="doctype-groups" class="doctype-grid"></div></section>
+</main><script>window.csrf_token={{ csrf_token | tojson }};</script><script>
+const form=document.querySelector('#setup-form'),company=document.querySelector('#company');
+const message=document.querySelector('#message'),applyButton=document.querySelector('#apply');
+let previewConfig=null,requestId=null;
+const groups={
+  'Business setup':['TRT Business Setup','TRT Onboarding Run','TRT Outlet','TRT Register','TRT Staff Assignment','TRT FX Rate'],
+  'Floor and devices':['TRT Service Area','TRT Table','TRT Kitchen Station','TRT Device'],
+  'Catalog':['TRT Menu','TRT Modifier Group'],
+  'Operations':['TRT Order','TRT Kitchen Ticket','TRT Payment Attempt','TRT Sync Event'],
+  'Migration':['TRT Import Job','TRT Legacy Record']};
+const children={'TRT Menu Entry':'TRT Menu','TRT Modifier Option':'TRT Modifier Group','TRT Order Line':'TRT Order','TRT Ticket Line':'TRT Kitchen Ticket'};
+const catalog=document.querySelector('#doctype-groups');
+for(const [heading,doctypes] of Object.entries(groups)){
+  const section=document.createElement('div'),h=document.createElement('h3');h.textContent=heading;section.append(h);
+  for(const name of doctypes){const p=document.createElement('p'),a=document.createElement('a');a.href='/app/'+name.toLowerCase().replaceAll(' ','-');a.textContent=name;p.append(a);section.append(p)}
+  for(const [name,parent] of Object.entries(children))if(doctypes.includes(parent)){const p=document.createElement('p'),a=document.createElement('a');a.href='/app/'+parent.toLowerCase().replaceAll(' ','-');a.textContent=name+' · in '+parent;p.append(a);section.append(p)}
+  catalog.append(section)}
+function show(text,type=''){message.textContent=text;message.className=type}
+async function call(method,data={},post=false){
+  const url='/api/method/'+method+(post?'':'?'+new URLSearchParams(data));
+  const response=await fetch(url,{method:post?'POST':'GET',credentials:'same-origin',headers:{Accept:'application/json',...(post?{'Content-Type':'application/json','X-Frappe-CSRF-Token':window.csrf_token}:{})},body:post?JSON.stringify(data):undefined});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||result.exc){let text='Request failed ('+response.status+')';if(result._server_messages)try{text=JSON.parse(result._server_messages).map(x=>JSON.parse(x).message).join(' · ')}catch{}throw new Error(text)}
+  return result.message}
+const api=(method,data={},post=false)=>call('table_remote_till.onboarding.'+method,data,post);
+const migrationApi=(method,data={},post=false)=>call('table_remote_till.migration.'+method,data,post);
+function fill(id,values,first=''){const select=document.querySelector('#'+id);select.replaceChildren();if(first)select.add(new Option(first,''));for(const value of values)select.add(new Option(value,value))}
+function collect(){const data=new FormData(form);return {company:data.get('company'),business_type:data.get('business_type'),outlet_title:data.get('outlet_title'),branch:data.get('branch'),register_title:data.get('register_title'),warehouse:data.get('warehouse'),price_list:data.get('price_list'),customer:data.get('customer'),pos_profile:data.get('pos_profile'),cash_mode:data.get('cash_mode'),write_off_account:data.get('write_off_account'),cost_center:data.get('cost_center'),tax_template:data.get('tax_template'),channels:data.getAll('channel'),lbp_per_usd:data.get('lbp_per_usd'),approve_fx_rate:data.has('approve_fx_rate'),enable_lbp:data.has('enable_lbp'),set_pos_invoice_mode:data.has('set_pos_invoice_mode'),seed_sample_data:data.has('seed_sample_data')}}
+function invalidate(){previewConfig=null;requestId=null;applyButton.disabled=true;document.querySelector('#plan').hidden=true}
+form.addEventListener('input',invalidate);form.addEventListener('change',invalidate);
+form.querySelector('[name=business_type]').addEventListener('change',e=>{const type=e.target.value,chosen=new Set(type==='Retail'?['Retail']:['Table','Tab','Takeaway']);if(type==='Mixed')chosen.add('Retail');for(const input of form.querySelectorAll('[name=channel]'))input.checked=chosen.has(input.value)});
+async function loadOptions(){try{
+  const state=await api('options',company.value?{company:company.value}:{});
+  if(!company.options.length)for(const row of state.companies)company.add(new Option(row.name+' · '+row.default_currency,row.name));
+  document.querySelector('#company-needed').hidden=state.companies.length>0;form.hidden=!state.companies.length;if(!state.companies.length)return;
+  company.value=state.company;const c=state.choices,d=state.defaults;
+  fill('warehouse',c.warehouses,'Create new warehouse');fill('price_list',c.price_lists,'Create new selling list');
+  fill('customer',c.customers,'Create walk-in customer');fill('pos_profile',c.profiles,'Create POS Profile');
+  fill('cash_mode',c.cash_modes);fill('write_off_account',c.accounts,'Choose account');fill('cost_center',c.cost_centers,'Choose cost center');fill('tax_template',c.tax_templates,'No tax template yet');
+  for(const [id,value] of Object.entries(d))if(value&&document.querySelector('#'+id))document.querySelector('#'+id).value=value;
+  await refresh()}catch(error){show(error.message,'error')}}
+company.addEventListener('change',loadOptions);
+async function refresh(){try{const state=await api('status',{company:company.value});document.querySelector('#progress').textContent=`${state.ready_count} of ${state.total_count} readiness checks ready`;
+  const list=document.querySelector('#checks');list.replaceChildren();for(const step of state.steps){const li=document.createElement('li'),a=document.createElement('a');a.href=step.route;a.textContent=step.label;const marker=document.createElement('strong');marker.className=step.ready?'done':'todo';marker.textContent=step.ready?'✓ ':'○ ';li.append(marker,a);list.append(li)}}catch(error){document.querySelector('#progress').textContent=error.message}}
+document.querySelector('#preview').addEventListener('click',async()=>{invalidate();if(!form.reportValidity())return;show('Checking setup…');try{
+  const data=collect(),plan=await api('preview_setup',{config:JSON.stringify(data)},true);previewConfig=JSON.stringify(data);requestId=crypto.randomUUID();applyButton.disabled=false;
+  const list=document.querySelector('#actions-list');list.replaceChildren();for(const row of plan.actions){const li=document.createElement('li');li.textContent=`${row.action}: ${row.label} — ${row.name}`;list.append(li)}
+  const remaining=document.querySelector('#remaining-list');remaining.replaceChildren();for(const item of plan.remaining){const li=document.createElement('li');li.textContent=item;remaining.append(li)}
+  document.querySelector('#plan').hidden=false;show('Preview ready. Review the changes, then apply.','success')}catch(error){show(error.message,'error')}});
+applyButton.addEventListener('click',async()=>{if(!previewConfig||JSON.stringify(collect())!==previewConfig)return invalidate();applyButton.disabled=true;show('Creating outlet and ERPNext records…');try{
+  const result=await api('apply_setup',{config:previewConfig,request_id:requestId},true);const box=document.querySelector('#result');box.replaceChildren();box.hidden=false;
+  const p=document.createElement('p');p.textContent=`Created ${result.created.length} records for ${result.company}.`;const a=document.createElement('a');a.href=result.next_url;a.textContent='Open outlet';box.append(p,a);
+  show('Setup applied. Complete the remaining readiness checks below.','success');refresh()}catch(error){show(error.message,'error');applyButton.disabled=false}});
+let importJob=null,importSupported=false,importColumns=[];
+const importMessage=document.querySelector('#import-message');
+function showImport(text,type=''){importMessage.textContent=text;importMessage.className=type}
+for(const id of ['source','record-type','export-file'])document.querySelector('#'+id).addEventListener('change',()=>{
+  importJob=null;importSupported=false;document.querySelector('#mapping').hidden=true;
+  document.querySelector('#job-link').replaceChildren();
+  document.querySelector('#import-masters').disabled=true;showImport('')});
+const fieldsByType={Item:['source_id','name','item_group','stock_uom','code','is_stock_item'],Customer:['source_id','name','customer_group','territory'],Supplier:['source_id','name','supplier_group']};
+document.querySelector('#upload-export').addEventListener('click',async()=>{
+  const file=document.querySelector('#export-file').files[0],source=document.querySelector('#source').value,recordType=document.querySelector('#record-type').value;
+  if(!file)return showImport('Choose a CSV or XLSX export.','error');
+  if(!/\.(csv|xlsx)$/i.test(file.name))return showImport('Choose a CSV or XLSX export.','error');
+  if(file.size>20000000)return showImport('Split exports larger than 20 MB by period.','error');
+  document.querySelector('#upload-export').disabled=true;showImport('Creating a private import job…');
+  try{const created=await migrationApi('new_job',{source,record_type:recordType},true);importJob=created.job;importSupported=created.import_supported;
+    const link=document.createElement('a');link.href='/app/trt-import-job/'+importJob;link.textContent='Open import job '+importJob;
+    document.querySelector('#job-link').replaceChildren(link);
+    const payload=new FormData();payload.append('file',file);payload.append('doctype','TRT Import Job');payload.append('docname',importJob);payload.append('fieldname','source_file');payload.append('is_private','1');
+    const response=await fetch('/api/method/upload_file',{method:'POST',credentials:'same-origin',headers:{'X-Frappe-CSRF-Token':window.csrf_token},body:payload});
+    const uploaded=await response.json();if(!response.ok||uploaded.exc||!uploaded.message?.name)throw new Error('Private upload failed; open the import job to retry.');
+    await migrationApi('attach_export',{job_name:importJob,file_name:uploaded.message.name},true);
+    const suggested=await migrationApi('suggest_mapping',{job_name:importJob});importColumns=suggested.columns;
+    const fields=fieldsByType[recordType]||['source_id','date','branch','amount'];const box=document.querySelector('#mapping-fields');box.replaceChildren();
+    for(const field of fields){const label=document.createElement('label'),select=document.createElement('select');label.textContent=field.replaceAll('_',' ');select.dataset.field=field;
+      select.add(new Option('Unmapped',''));for(const column of importColumns)select.add(new Option(column,column));select.value=suggested.mapping[field]||'';label.append(select);box.append(label)}
+    document.querySelector('#mapping').hidden=false;document.querySelector('#import-masters').disabled=true;document.querySelector('#import-report').replaceChildren();showImport('Review column mappings, then preview.','success');
+  }catch(error){showImport(error.message,'error')}finally{document.querySelector('#upload-export').disabled=false}});
+document.querySelector('#mapping-fields').addEventListener('change',()=>{document.querySelector('#import-masters').disabled=true});
+document.querySelector('#preview-import').addEventListener('click',async()=>{if(!importJob)return;showImport('Checking export…');try{
+  const mapping={};for(const select of document.querySelectorAll('#mapping-fields select'))if(select.value)mapping[select.dataset.field]=select.value;
+  const report=await migrationApi('preview',{job_name:importJob,mapping_json:JSON.stringify(mapping)},true);
+  const box=document.querySelector('#import-report');box.replaceChildren();const p=document.createElement('p');p.textContent=`${report.rows} rows · ${report.error_count} errors · ${report.import_supported?'master import available':'historical import pending reconciliation'}`;box.append(p);
+  const list=document.createElement('ul');for(const total of report.totals){const li=document.createElement('li');li.textContent=`${total.branch} · ${total.period} · ${total.count} records · ${total.amount}`;list.append(li)}box.append(list);
+  for(const issue of report.errors.slice(0,10)){const q=document.createElement('p');q.className='error';q.textContent=`Row ${issue.row}: ${issue.error}`;box.append(q)}
+  document.querySelector('#import-masters').disabled=!!report.error_count||!importSupported;showImport('Preview complete.','success');
+}catch(error){showImport(error.message,'error')}});
+document.querySelector('#import-masters').addEventListener('click',async()=>{if(!importJob||!importSupported)return;document.querySelector('#import-masters').disabled=true;showImport('Importing master records…');try{
+  const result=await migrationApi('import_masters',{job_name:importJob},true);showImport(`Import finished: ${result.counts.imported||0} imported, ${result.counts.failed||0} failed. Open the job for details.`,'success');refresh();
+}catch(error){showImport(error.message,'error')}});
+loadOptions();
 </script></body></html>

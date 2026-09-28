@@ -23,6 +23,16 @@ def f(name: str, kind: str = "Data", options: str | None = None, **extra):
 
 
 SPECS = {
+    "TRT Onboarding Run": [
+        f("request_id", unique=1, reqd=1, in_list_view=1),
+        f("company", "Link", "Company", reqd=1, in_list_view=1),
+        f("outlet", "Link", "TRT Outlet"),
+        f("request_hash", reqd=1),
+        f("status", "Select", "Applied", default="Applied", in_list_view=1),
+        f("result_json", "Code", "JSON"),
+        f("run_by", "Link", "User", reqd=1),
+        f("run_at", "Datetime", reqd=1),
+    ],
     "TRT Business Setup": [
         f("company", "Link", "Company", reqd=1, unique=1),
         f("business_type", "Select", "Restaurant/Pub\nRetail\nMixed", reqd=1),
@@ -193,6 +203,9 @@ def main():
              "print": 1, "report": 1, "export": 1}
             for role in ("System Manager", "TRT Manager")
         ]
+        if title == "TRT Onboarding Run":
+            permissions = [{"role": role, "read": 1, "report": 1, "export": 1}
+                           for role in ("System Manager", "TRT Manager")]
         doc = {
             "doctype": "DocType", "name": title, "module": "Table Remote Till",
             "engine": "InnoDB", "autoname": "hash", "istable": int(is_child),

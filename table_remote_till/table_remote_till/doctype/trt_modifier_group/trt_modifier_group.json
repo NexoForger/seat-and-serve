@@ -4,11 +4,12 @@
  "module": "Table Remote Till",
  "engine": "InnoDB",
  "autoname": "hash",
+ "title_field": "title",
+ "show_title_field_in_link": 1,
  "istable": 0,
  "field_order": [
   "title",
   "minimum",
-  "maximum",
   "options"
  ],
  "fields": [
@@ -23,11 +24,6 @@
    "fieldname": "minimum",
    "fieldtype": "Int",
    "label": "Minimum"
-  },
-  {
-   "fieldname": "maximum",
-   "fieldtype": "Int",
-   "label": "Maximum"
   },
   {
    "fieldname": "options",

@@ -1,8 +1,8 @@
 {
  "doctype": "Workspace",
  "name": "Table Remote Till",
- "label": "Table Remote Till",
- "title": "Table Remote Till",
+ "label": "S&S (Seat & Serve)",
+ "title": "S&S (Seat & Serve)",
  "module": "Table Remote Till",
  "app": "table_remote_till",
  "type": "Workspace",
@@ -11,7 +11,7 @@
  "is_hidden": 0,
  "parent_page": "",
  "sequence_id": 18.0,
- "content": "[{\"id\":\"trt-shortcuts\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Start here</b></span>\",\"col\":12}},{\"id\":\"trt-shortcut-0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Guided onboarding\",\"col\":3}},{\"id\":\"trt-shortcut-1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Staff till\",\"col\":3}},{\"id\":\"trt-shortcut-2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Kitchen\",\"col\":3}},{\"id\":\"trt-shortcut-3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Kiosk\",\"col\":3}},{\"id\":\"trt-shortcut-4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Public menu\",\"col\":3}},{\"id\":\"trt-records\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>App records</b></span>\",\"col\":12}},{\"id\":\"trt-card-0\",\"type\":\"card\",\"data\":{\"card_name\":\"Business setup\",\"col\":4}},{\"id\":\"trt-card-1\",\"type\":\"card\",\"data\":{\"card_name\":\"Floor and devices\",\"col\":4}},{\"id\":\"trt-card-2\",\"type\":\"card\",\"data\":{\"card_name\":\"Catalog\",\"col\":4}},{\"id\":\"trt-card-3\",\"type\":\"card\",\"data\":{\"card_name\":\"Operations\",\"col\":4}},{\"id\":\"trt-card-4\",\"type\":\"card\",\"data\":{\"card_name\":\"Migration\",\"col\":4}}]",
+ "content": "[{\"id\":\"trt-shortcuts\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Start here</b></span>\",\"col\":12}},{\"id\":\"trt-shortcut-0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Guided onboarding\",\"col\":3}},{\"id\":\"trt-shortcut-1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Staff till\",\"col\":3}},{\"id\":\"trt-shortcut-2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Kitchen\",\"col\":3}},{\"id\":\"trt-shortcut-3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Kiosk\",\"col\":3}},{\"id\":\"trt-shortcut-4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Public menu\",\"col\":3}},{\"id\":\"trt-shortcut-5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Reservation portal\",\"col\":3}},{\"id\":\"trt-records\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>App records</b></span>\",\"col\":12}},{\"id\":\"trt-card-0\",\"type\":\"card\",\"data\":{\"card_name\":\"Business setup\",\"col\":4}},{\"id\":\"trt-card-1\",\"type\":\"card\",\"data\":{\"card_name\":\"Floor and equipment\",\"col\":4}},{\"id\":\"trt-card-2\",\"type\":\"card\",\"data\":{\"card_name\":\"Menus and modifiers\",\"col\":4}},{\"id\":\"trt-card-3\",\"type\":\"card\",\"data\":{\"card_name\":\"Promotions\",\"col\":4}},{\"id\":\"trt-card-4\",\"type\":\"card\",\"data\":{\"card_name\":\"Orders and kitchen\",\"col\":4}},{\"id\":\"trt-card-5\",\"type\":\"card\",\"data\":{\"card_name\":\"Payments and rates\",\"col\":4}},{\"id\":\"trt-card-6\",\"type\":\"card\",\"data\":{\"card_name\":\"Integrations and history\",\"col\":4}}]",
  "links": [
   {
    "type": "Card Break",
@@ -20,7 +20,7 @@
   },
   {
    "type": "Link",
-   "label": "TRT Business Setup",
+   "label": "Business Setup",
    "link_type": "DocType",
    "link_to": "TRT Business Setup",
    "hidden": 0,
@@ -28,7 +28,15 @@
   },
   {
    "type": "Link",
-   "label": "TRT Onboarding Run",
+   "label": "Guest Appearance",
+   "link_type": "DocType",
+   "link_to": "TRT Guest Appearance",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "Onboarding Run",
    "link_type": "DocType",
    "link_to": "TRT Onboarding Run",
    "hidden": 0,
@@ -36,7 +44,7 @@
   },
   {
    "type": "Link",
-   "label": "TRT Outlet",
+   "label": "Outlet",
    "link_type": "DocType",
    "link_to": "TRT Outlet",
    "hidden": 0,
@@ -44,36 +52,20 @@
   },
   {
    "type": "Link",
-   "label": "TRT Register",
-   "link_type": "DocType",
-   "link_to": "TRT Register",
-   "hidden": 0,
-   "onboard": 0
-  },
-  {
-   "type": "Link",
-   "label": "TRT Staff Assignment",
+   "label": "Staff Assignment",
    "link_type": "DocType",
    "link_to": "TRT Staff Assignment",
    "hidden": 0,
    "onboard": 0
   },
   {
-   "type": "Link",
-   "label": "TRT FX Rate",
-   "link_type": "DocType",
-   "link_to": "TRT FX Rate",
-   "hidden": 0,
-   "onboard": 0
-  },
-  {
    "type": "Card Break",
-   "label": "Floor and devices",
+   "label": "Floor and equipment",
    "hidden": 0
   },
   {
    "type": "Link",
-   "label": "TRT Service Area",
+   "label": "Service Area",
    "link_type": "DocType",
    "link_to": "TRT Service Area",
    "hidden": 0,
@@ -81,7 +73,7 @@
   },
   {
    "type": "Link",
-   "label": "TRT Table",
+   "label": "Table",
    "link_type": "DocType",
    "link_to": "TRT Table",
    "hidden": 0,
@@ -89,28 +81,44 @@
   },
   {
    "type": "Link",
-   "label": "TRT Kitchen Station",
+   "label": "Reservation",
    "link_type": "DocType",
-   "link_to": "TRT Kitchen Station",
+   "link_to": "TRT Reservation",
    "hidden": 0,
    "onboard": 0
   },
   {
    "type": "Link",
-   "label": "TRT Device",
+   "label": "Register",
+   "link_type": "DocType",
+   "link_to": "TRT Register",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "Device",
    "link_type": "DocType",
    "link_to": "TRT Device",
    "hidden": 0,
    "onboard": 0
   },
   {
+   "type": "Link",
+   "label": "Kitchen Station",
+   "link_type": "DocType",
+   "link_to": "TRT Kitchen Station",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
    "type": "Card Break",
-   "label": "Catalog",
+   "label": "Menus and modifiers",
    "hidden": 0
   },
   {
    "type": "Link",
-   "label": "TRT Menu",
+   "label": "Menu",
    "link_type": "DocType",
    "link_to": "TRT Menu",
    "hidden": 0,
@@ -118,7 +126,7 @@
   },
   {
    "type": "Link",
-   "label": "TRT Modifier Group",
+   "label": "Modifier Group",
    "link_type": "DocType",
    "link_to": "TRT Modifier Group",
    "hidden": 0,
@@ -126,12 +134,33 @@
   },
   {
    "type": "Card Break",
-   "label": "Operations",
+   "label": "Promotions",
    "hidden": 0
   },
   {
    "type": "Link",
-   "label": "TRT Order",
+   "label": "Promotion",
+   "link_type": "DocType",
+   "link_to": "TRT Promotion",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Link",
+   "label": "Promotion Redemption",
+   "link_type": "DocType",
+   "link_to": "TRT Promotion Redemption",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Card Break",
+   "label": "Orders and kitchen",
+   "hidden": 0
+  },
+  {
+   "type": "Link",
+   "label": "Order",
    "link_type": "DocType",
    "link_to": "TRT Order",
    "hidden": 0,
@@ -139,15 +168,20 @@
   },
   {
    "type": "Link",
-   "label": "TRT Kitchen Ticket",
+   "label": "Kitchen Ticket",
    "link_type": "DocType",
    "link_to": "TRT Kitchen Ticket",
    "hidden": 0,
    "onboard": 0
   },
   {
+   "type": "Card Break",
+   "label": "Payments and rates",
+   "hidden": 0
+  },
+  {
    "type": "Link",
-   "label": "TRT Payment Attempt",
+   "label": "Payment Attempt",
    "link_type": "DocType",
    "link_to": "TRT Payment Attempt",
    "hidden": 0,
@@ -155,20 +189,28 @@
   },
   {
    "type": "Link",
-   "label": "TRT Sync Event",
+   "label": "FX Rate",
+   "link_type": "DocType",
+   "link_to": "TRT FX Rate",
+   "hidden": 0,
+   "onboard": 0
+  },
+  {
+   "type": "Card Break",
+   "label": "Integrations and history",
+   "hidden": 0
+  },
+  {
+   "type": "Link",
+   "label": "Sync Event",
    "link_type": "DocType",
    "link_to": "TRT Sync Event",
    "hidden": 0,
    "onboard": 0
   },
   {
-   "type": "Card Break",
-   "label": "Migration",
-   "hidden": 0
-  },
-  {
    "type": "Link",
-   "label": "TRT Import Job",
+   "label": "Import Job",
    "link_type": "DocType",
    "link_to": "TRT Import Job",
    "hidden": 0,
@@ -176,7 +218,7 @@
   },
   {
    "type": "Link",
-   "label": "TRT Legacy Record",
+   "label": "Legacy Record",
    "link_type": "DocType",
    "link_to": "TRT Legacy Record",
    "hidden": 0,
@@ -212,6 +254,12 @@
    "type": "URL",
    "label": "Public menu",
    "url": "/menu",
+   "color": "Blue"
+  },
+  {
+   "type": "URL",
+   "label": "Reservation portal",
+   "url": "/reservations",
    "color": "Blue"
   }
  ],

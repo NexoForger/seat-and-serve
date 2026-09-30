@@ -1,23 +1,24 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Business onboarding · Table Remote Till</title>
+<title>Business onboarding · S&S (Seat & Serve)</title>
 <style>
-:root{font-family:system-ui,-apple-system,sans-serif;color:#18324b;background:#f2f5f9}*{box-sizing:border-box}body{margin:0}
-header{background:#17324d;color:#fff;padding:1rem max(1rem,calc((100vw - 1100px)/2))}header a{color:#fff;text-decoration:none}
-main{max-width:1100px;margin:2rem auto;padding:0 1rem 3rem}h1{margin:.2rem 0}h2{margin-top:0;font-size:1.25rem}h3{font-size:1rem}
-p{line-height:1.5}.muted{color:#5c7185}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem}
-.panel{background:#fff;border:1px solid #dce4ec;border-radius:14px;padding:1.25rem;margin:1rem 0;box-shadow:0 2px 10px #18324b08}
-label{display:block;font-weight:600;font-size:.92rem}input,select{display:block;width:100%;margin:.35rem 0 0;padding:.68rem;border:1px solid #aabac9;border-radius:8px;background:#fff;color:#18324b;font:inherit}
-input[type=checkbox]{width:auto;display:inline-block;margin:0 .5rem 0 0;accent-color:#087e8b}.check{display:flex;align-items:flex-start;gap:.25rem;font-weight:500;margin:.7rem 0}
-button{border:0;background:#087e8b;color:#fff;border-radius:8px;padding:.75rem 1rem;font:inherit;font-weight:650;cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}
-.actions{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-top:1.2rem}.error{color:#9e332c}.success{color:#146a4a}
-.notice{background:#eef7fa;border-left:4px solid #087e8b;padding:.75rem 1rem;border-radius:6px}ol,ul{padding-left:1.3rem}li{padding:.25rem 0}a{color:#087e8b}
-.checks{columns:2;column-gap:2rem}.checks li{break-inside:avoid;padding:.4rem 0}.done{color:#146a4a}.todo{color:#9e5d22}
-.steps{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0}.steps span{background:#e4edf2;padding:.45rem .8rem;border-radius:100px;font-size:.85rem}
+:root{font-family:'DM Sans',system-ui,-apple-system,sans-serif;color:#171917;background:#f7f8f3}*{box-sizing:border-box}body{margin:0}
+header{display:flex;align-items:center;gap:10px;background:#171a16;color:#fff;padding:1.25rem max(1rem,calc((100vw - 1100px)/2));border-bottom:3px solid #e8f574}header a{color:#fff;text-decoration:none}header strong{font-size:1.08rem;letter-spacing:-.5px}header .header-tag{color:#dce7a9;font-size:.83rem}
+main{max-width:1100px;margin:2.5rem auto;padding:0 1rem 3rem}h1{margin:.2rem 0;font-size:clamp(2rem,4vw,2.9rem);letter-spacing:-1.5px}h2{margin-top:0;font-size:1.25rem;letter-spacing:-.4px}h3{font-size:1rem}
+p{line-height:1.55}.muted{color:#646d5e}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem}
+.panel{background:#fff;border:1px solid #e0e5d8;border-radius:16px;padding:1.5rem;margin:1rem 0;box-shadow:0 5px 22px #17210e09}
+label{display:block;font-weight:650;font-size:.92rem}input,select{display:block;width:100%;min-height:44px;margin:.35rem 0 0;padding:.68rem;border:1px solid #cbd3c0;border-radius:9px;background:#fff;color:#171917;font:inherit}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #a9c03d;outline-offset:2px}
+input[type=checkbox]{width:auto;min-height:0;display:inline-block;margin:0 .5rem 0 0;accent-color:#657d24}.check{display:flex;align-items:flex-start;gap:.25rem;font-weight:500;margin:.7rem 0}
+button{border:0;background:#e8f574;color:#171917;border-radius:9px;padding:.8rem 1.15rem;min-height:44px;font:inherit;font-weight:750;cursor:pointer}button:hover:not(:disabled){background:#dce968}button:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-top:1.2rem}.error{color:#9e332c}.success{color:#3e6b25}
+.notice{background:#f3f6e2;border-left:4px solid #8da42c;padding:.85rem 1rem;border-radius:7px}ol,ul{padding-left:1.3rem}li{padding:.25rem 0}a{color:#435e16;text-underline-offset:3px}
+.checks{columns:2;column-gap:2rem}.checks li{break-inside:avoid;padding:.4rem 0}.done{color:#3e6b25}.todo{color:#9e5d22}
+.steps{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.5rem 0}.steps span{background:#e9efcf;border:1px solid #dce6ae;padding:.55rem .85rem;border-radius:100px;font-size:.85rem;font-weight:650}
 .doctype-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.25rem 1.5rem}
 @media(max-width:650px){.checks{columns:1}header{padding:1rem}}
 </style></head><body>
-<header><strong><a href="/desk/table-remote-till">Table Remote Till</a></strong> · Business onboarding</header>
+<header><strong><a href="/desk/table-remote-till">S&S (Seat & Serve)</a></strong><span class="header-tag">/ Business onboarding</span></header>
 <main><h1>Set up your business</h1><p class="muted">Create the outlet and its ERPNext POS records in one run. Review the exact changes before applying them. Each business uses its own Frappe site.</p>
 <div class="steps"><span>1 · Business</span><span>2 · POS setup</span><span>3 · Channels</span><span>4 · Preview and create</span><span>5 · Data and approvals</span></div>
 <div class="panel" id="company-needed" hidden><p>Start by creating an ERPNext Company and chart of accounts on this site.</p><a href="/app/company/new-company">Create Company</a></div>
@@ -59,9 +60,11 @@ button{border:0;background:#087e8b;color:#fff;border-radius:8px;padding:.75rem 1
 <div id="plan" hidden><h3>Planned changes</h3><ol id="actions-list"></ol><h3>After setup</h3><ul id="remaining-list"></ul></div><div id="result" hidden></div></section>
 </form>
 <section class="panel"><h2>5 · Bring in existing data</h2><p class="muted">Upload a private CSV or Excel export, review suggested column mappings, then preview totals. Master records can be imported here. Historical exports are inventoried for a reconciled migration.</p>
-<div class="grid"><label>Previous system<select id="source"><option>Omega POS</option><option>Squirrel Cloud</option><option>Squirrel 11</option><option>Generic</option></select></label>
+<div class="grid"><label>Previous system<select id="source"><option>Omega POS</option><option>BIM POS</option><option>Squirrel Cloud</option><option>Squirrel 11</option><option>Generic</option></select></label>
 <label>Record type<select id="record-type"><option>Item</option><option>Customer</option><option>Supplier</option><option>Sale</option><option>Return</option><option>Payment</option><option>Purchase</option><option>Stock</option><option>Journal</option><option>Employee</option></select></label>
+<label id="import-price-list-field">Target selling price list<select id="import-price-list"><option value="">No selling prices</option></select></label>
 <label>Private CSV or XLSX export<input id="export-file" type="file" accept=".csv,.xlsx"></label></div>
+<p id="source-guidance" class="muted"></p>
 <div class="actions"><button type="button" id="upload-export">Upload and suggest mapping</button><span id="import-message" role="status"></span></div>
 <p id="job-link"></p><div id="mapping" hidden><h3>Column mapping</h3><div id="mapping-fields" class="grid"></div>
 <div class="actions"><button type="button" id="preview-import">Preview export</button><button type="button" id="import-masters" disabled>Import masters</button></div>
@@ -69,23 +72,23 @@ button{border:0;background:#087e8b;color:#fff;border-radius:8px;padding:.75rem 1
 <section class="panel"><h2>Readiness and approvals</h2><p id="progress" role="status"></p><ol id="checks" class="checks"></ol>
 <p>Historical transaction categories remain in the <a href="/app/trt-legacy-record">source ledger</a> until reconciled import support is built.</p>
 <p>Business owners must approve their tax and payroll rules. Select a live Lebanon payment provider and actual device models before live rollout.</p></section>
-<section class="panel"><h2>App records</h2><p class="muted">All parent DocTypes are available in the Table Remote Till Desk workspace. Child tables open inside their parent forms.</p><div id="doctype-groups" class="doctype-grid"></div></section>
+<section class="panel"><h2>App records</h2><p class="muted">All parent DocTypes are available in the S&S (Seat & Serve) Desk workspace. Child tables open inside their parent forms.</p><div id="doctype-groups" class="doctype-grid"></div></section>
 </main><script>window.csrf_token={{ csrf_token | tojson }};</script><script>
 const form=document.querySelector('#setup-form'),company=document.querySelector('#company');
 const message=document.querySelector('#message'),applyButton=document.querySelector('#apply');
 let previewConfig=null,requestId=null;
 const groups={
   'Business setup':['TRT Business Setup','TRT Onboarding Run','TRT Outlet','TRT Register','TRT Staff Assignment','TRT FX Rate'],
-  'Floor and devices':['TRT Service Area','TRT Table','TRT Kitchen Station','TRT Device'],
-  'Catalog':['TRT Menu','TRT Modifier Group'],
+  'Floor and devices':['TRT Service Area','TRT Table','TRT Reservation','TRT Kitchen Station','TRT Device'],
+  'Catalog':['TRT Menu','TRT Modifier Group','TRT Promotion'],
   'Operations':['TRT Order','TRT Kitchen Ticket','TRT Payment Attempt','TRT Sync Event'],
   'Migration':['TRT Import Job','TRT Legacy Record']};
 const children={'TRT Menu Entry':'TRT Menu','TRT Modifier Option':'TRT Modifier Group','TRT Order Line':'TRT Order','TRT Ticket Line':'TRT Kitchen Ticket'};
 const catalog=document.querySelector('#doctype-groups');
 for(const [heading,doctypes] of Object.entries(groups)){
   const section=document.createElement('div'),h=document.createElement('h3');h.textContent=heading;section.append(h);
-  for(const name of doctypes){const p=document.createElement('p'),a=document.createElement('a');a.href='/app/'+name.toLowerCase().replaceAll(' ','-');a.textContent=name;p.append(a);section.append(p)}
-  for(const [name,parent] of Object.entries(children))if(doctypes.includes(parent)){const p=document.createElement('p'),a=document.createElement('a');a.href='/app/'+parent.toLowerCase().replaceAll(' ','-');a.textContent=name+' · in '+parent;p.append(a);section.append(p)}
+  for(const name of doctypes){const p=document.createElement('p'),a=document.createElement('a');a.href='/app/'+name.toLowerCase().replaceAll(' ','-');a.textContent=name.replace(/^TRT /,'');p.append(a);section.append(p)}
+  for(const [name,parent] of Object.entries(children))if(doctypes.includes(parent)){const p=document.createElement('p'),a=document.createElement('a');a.href='/app/'+parent.toLowerCase().replaceAll(' ','-');a.textContent=name.replace(/^TRT /,'')+' · in '+parent.replace(/^TRT /,'');p.append(a);section.append(p)}
   catalog.append(section)}
 function show(text,type=''){message.textContent=text;message.className=type}
 async function call(method,data={},post=false){
@@ -107,6 +110,7 @@ async function loadOptions(){try{
   document.querySelector('#company-needed').hidden=state.companies.length>0;form.hidden=!state.companies.length;if(!state.companies.length)return;
   company.value=state.company;const c=state.choices,d=state.defaults;
   fill('warehouse',c.warehouses,'Create new warehouse');fill('price_list',c.price_lists,'Create new selling list');
+  fill('import-price-list',c.price_lists,'No selling prices');
   fill('customer',c.customers,'Create walk-in customer');fill('pos_profile',c.profiles,'Create POS Profile');
   fill('cash_mode',c.cash_modes);fill('write_off_account',c.accounts,'Choose account');fill('cost_center',c.cost_centers,'Choose cost center');fill('tax_template',c.tax_templates,'No tax template yet');
   for(const [id,value] of Object.entries(d))if(value&&document.querySelector('#'+id))document.querySelector('#'+id).value=value;
@@ -122,22 +126,28 @@ document.querySelector('#preview').addEventListener('click',async()=>{invalidate
 applyButton.addEventListener('click',async()=>{if(!previewConfig||JSON.stringify(collect())!==previewConfig)return invalidate();applyButton.disabled=true;show('Creating outlet and ERPNext records…');try{
   const result=await api('apply_setup',{config:previewConfig,request_id:requestId},true);const box=document.querySelector('#result');box.replaceChildren();box.hidden=false;
   const p=document.createElement('p');p.textContent=`Created ${result.created.length} records for ${result.company}.`;const a=document.createElement('a');a.href=result.next_url;a.textContent='Open outlet';box.append(p,a);
+  const refreshed=await api('options',{company:company.value});fill('import-price-list',refreshed.choices.price_lists,'No selling prices');
   show('Setup applied. Complete the remaining readiness checks below.','success');refresh()}catch(error){show(error.message,'error');applyButton.disabled=false}});
 let importJob=null,importSupported=false,importColumns=[];
 const importMessage=document.querySelector('#import-message');
 function showImport(text,type=''){importMessage.textContent=text;importMessage.className=type}
-for(const id of ['source','record-type','export-file'])document.querySelector('#'+id).addEventListener('change',()=>{
+function updateImportGuidance(){const source=document.querySelector('#source').value,type=document.querySelector('#record-type').value;
+  document.querySelector('#import-price-list-field').hidden=type!=='Item';
+  document.querySelector('#source-guidance').textContent=source==='BIM POS'?'For a BIM POS client, request separate Back Office exports for products, customers and suppliers. Product versions differ, so review the suggested columns and map the actual export before importing. Prices need a target selling list in the same currency as the export. Sales and other historical records can be previewed for reconciliation, but are not posted as ERPNext transactions.':''}
+updateImportGuidance();
+for(const id of ['source','record-type','import-price-list','export-file'])document.querySelector('#'+id).addEventListener('change',()=>{
+  updateImportGuidance();
   importJob=null;importSupported=false;document.querySelector('#mapping').hidden=true;
   document.querySelector('#job-link').replaceChildren();
   document.querySelector('#import-masters').disabled=true;showImport('')});
-const fieldsByType={Item:['source_id','name','item_group','stock_uom','code','is_stock_item'],Customer:['source_id','name','customer_group','territory'],Supplier:['source_id','name','supplier_group']};
+const fieldsByType={Item:['source_id','name','item_group','stock_uom','code','is_stock_item','selling_rate','currency'],Customer:['source_id','name','customer_group','territory'],Supplier:['source_id','name','supplier_group']};
 document.querySelector('#upload-export').addEventListener('click',async()=>{
   const file=document.querySelector('#export-file').files[0],source=document.querySelector('#source').value,recordType=document.querySelector('#record-type').value;
   if(!file)return showImport('Choose a CSV or XLSX export.','error');
   if(!/\.(csv|xlsx)$/i.test(file.name))return showImport('Choose a CSV or XLSX export.','error');
   if(file.size>20000000)return showImport('Split exports larger than 20 MB by period.','error');
   document.querySelector('#upload-export').disabled=true;showImport('Creating a private import job…');
-  try{const created=await migrationApi('new_job',{source,record_type:recordType},true);importJob=created.job;importSupported=created.import_supported;
+  try{const created=await migrationApi('new_job',{source,record_type:recordType,target_price_list:recordType==='Item'?document.querySelector('#import-price-list').value:null},true);importJob=created.job;importSupported=created.import_supported;
     const link=document.createElement('a');link.href='/app/trt-import-job/'+importJob;link.textContent='Open import job '+importJob;
     document.querySelector('#job-link').replaceChildren(link);
     const payload=new FormData();payload.append('file',file);payload.append('doctype','TRT Import Job');payload.append('docname',importJob);payload.append('fieldname','source_file');payload.append('is_private','1');

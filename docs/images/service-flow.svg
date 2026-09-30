@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">S&S (Seat & Serve) service flow</title><desc id="desc">Guest orders through a server checked menu, till or kiosk, then kitchen, service and payment records in ERPNext.</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#52656b"/></marker></defs>
+  <rect width="1200" height="300" rx="24" fill="#f4f7f5"/>
+  <g font-family="Arial,sans-serif" text-anchor="middle">
+    <g fill="#fff" stroke="#b7c9c1" stroke-width="2">
+      <rect x="35" y="85" width="190" height="125" rx="18"/><rect x="275" y="85" width="190" height="125" rx="18"/><rect x="515" y="85" width="190" height="125" rx="18"/><rect x="755" y="85" width="190" height="125" rx="18"/><rect x="995" y="85" width="170" height="125" rx="18"/>
+    </g>
+    <g fill="#173d36"><text x="130" y="130" font-size="23" font-weight="700">Guest</text><text x="130" y="165" font-size="16">QR · Kiosk · Staff</text>
+      <text x="370" y="130" font-size="23" font-weight="700">TRT order</text><text x="370" y="165" font-size="16">Menu · table · ticket</text>
+      <text x="610" y="130" font-size="23" font-weight="700">Kitchen</text><text x="610" y="165" font-size="16">Prepare · ready</text>
+      <text x="850" y="130" font-size="23" font-weight="700">Service</text><text x="850" y="165" font-size="16">Runner · handoff</text>
+      <text x="1080" y="130" font-size="23" font-weight="700">ERPNext</text><text x="1080" y="165" font-size="16">Invoice · tender</text></g>
+    <g fill="none" stroke="#52656b" stroke-width="3" marker-end="url(#arrow)"><path d="M230 147H264"/><path d="M470 147H504"/><path d="M710 147H744"/><path d="M950 147H984"/></g>
+    <text x="600" y="258" fill="#52656b" font-size="16">Order amounts are checked on the server; kitchen work is tracked by ticket lines.</text>
+  </g>
+</svg>

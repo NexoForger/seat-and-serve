@@ -11,4 +11,4 @@ class TRTStaffAssignment(Document):
 		if not set(frappe.get_roles(self.user)).intersection(
 			{"TRT Cashier", "TRT Kitchen", "TRT Manager", "System Manager"}
 		):
-			frappe.throw("Assigned user needs a Table Remote Till role")
+			frappe.throw("Assigned user needs a S&S (Seat & Serve) role")

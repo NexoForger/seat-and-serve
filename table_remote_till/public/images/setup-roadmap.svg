@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-labelledby="title desc">
+  <title id="title">TRT setup roadmap</title><desc id="desc">Six owner-approved stages from company and accounting setup to a reconciled pilot and staff training.</desc>
+  <rect width="1200" height="340" rx="24" fill="#f4f7f5"/><path d="M123 140H1077" stroke="#9aafa5" stroke-width="5"/>
+  <g font-family="Arial,sans-serif" text-anchor="middle">
+    <g fill="#fff" stroke="#b7c9c1" stroke-width="2"><circle cx="125" cy="140" r="54"/><circle cx="315" cy="140" r="54"/><circle cx="505" cy="140" r="54"/><circle cx="695" cy="140" r="54"/><circle cx="885" cy="140" r="54"/><circle cx="1075" cy="140" r="54"/></g>
+    <g fill="#173d36"><text x="125" y="148" font-size="25" font-weight="700">1</text><text x="315" y="148" font-size="25" font-weight="700">2</text><text x="505" y="148" font-size="25" font-weight="700">3</text><text x="695" y="148" font-size="25" font-weight="700">4</text><text x="885" y="148" font-size="25" font-weight="700">5</text><text x="1075" y="148" font-size="25" font-weight="700">6</text></g>
+    <g fill="#173d36" font-size="17" font-weight="700"><text x="125" y="225"><tspan x="125">Company &amp;</tspan><tspan x="125" dy="23">accounts</tspan></text><text x="315" y="225"><tspan x="315">Outlet &amp;</tspan><tspan x="315" dy="23">channels</tspan></text><text x="505" y="225"><tspan x="505">Items &amp;</tspan><tspan x="505" dy="23">recipes</tspan></text><text x="695" y="225"><tspan x="695">Menu &amp;</tspan><tspan x="695" dy="23">kitchen</tspan></text><text x="885" y="225"><tspan x="885">People &amp;</tspan><tspan x="885" dy="23">practice</tspan></text><text x="1075" y="225"><tspan x="1075">Pilot &amp;</tspan><tspan x="1075" dy="23">reconcile</tspan></text></g>
+    <text x="600" y="315" fill="#52656b" font-size="15">Accounting approval first · real menu and stock next · live sales only after a reconciled pilot</text>
+  </g>
+</svg>

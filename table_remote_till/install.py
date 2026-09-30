@@ -30,3 +30,10 @@ def after_install():
 
 def after_migrate():
 	ensure_roles()
+	# Frappe keeps the stable document names for existing sites, but its
+	# workspace/icon sync can retain their former display labels.
+	for doctype in ("Workspace", "Desktop Icon"):
+		if frappe.db.exists(doctype, "Table Remote Till"):
+			frappe.db.set_value(doctype, "Table Remote Till", "label", "S&S (Seat & Serve)",
+				update_modified=False)
+	frappe.clear_cache()

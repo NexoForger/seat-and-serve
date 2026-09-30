@@ -1,0 +1,14 @@
+{
+ "app": "table_remote_till",
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "App",
+ "idx": 1,
+ "label": "S&S (Seat & Serve)",
+ "link": "/app/table-remote-till",
+ "link_type": "External",
+ "logo_url": "/assets/table_remote_till/images/seat-and-serve.svg",
+ "name": "Table Remote Till",
+ "roles": [],
+ "standard": 1
+}

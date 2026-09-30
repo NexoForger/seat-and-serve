@@ -1,0 +1,27 @@
+{
+ "doctype": "DocType", "name": "TRT Reservation", "module": "Table Remote Till", "engine": "InnoDB",
+ "autoname": "hash", "title_field": "reservation_number", "show_title_field_in_link": 1,
+ "field_order": ["reservation_number", "outlet", "table", "status", "source", "guest_name", "phone", "email", "party_size", "starts_at", "ends_at", "special_requests", "order", "request_id", "request_hash"],
+ "fields": [
+  {"fieldname": "reservation_number", "fieldtype": "Data", "label": "Reservation Number", "read_only": 1, "unique": 1, "in_list_view": 1},
+  {"fieldname": "outlet", "fieldtype": "Link", "label": "Outlet", "options": "TRT Outlet", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "table", "fieldtype": "Link", "label": "Table", "options": "TRT Table", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Confirmed\nSeated\nCompleted\nCancelled\nNo Show", "default": "Confirmed", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "source", "fieldtype": "Select", "label": "Source", "options": "Portal\nRegister", "reqd": 1},
+  {"fieldname": "guest_name", "fieldtype": "Data", "label": "Guest Name", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "phone", "fieldtype": "Data", "label": "Phone"},
+  {"fieldname": "email", "fieldtype": "Data", "label": "Email"},
+  {"fieldname": "party_size", "fieldtype": "Int", "label": "Guests", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "starts_at", "fieldtype": "Datetime", "label": "Starts At", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "ends_at", "fieldtype": "Datetime", "label": "Ends At", "reqd": 1},
+  {"fieldname": "special_requests", "fieldtype": "Small Text", "label": "Special Requests"},
+  {"fieldname": "order", "fieldtype": "Link", "label": "Seated Order", "options": "TRT Order", "read_only": 1},
+  {"fieldname": "request_id", "fieldtype": "Data", "label": "Booking Request ID", "read_only": 1, "unique": 1, "hidden": 1},
+  {"fieldname": "request_hash", "fieldtype": "Data", "label": "Booking Request Hash", "read_only": 1, "hidden": 1}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "report": 1, "export": 1},
+  {"role": "TRT Manager", "read": 1, "write": 1, "create": 1, "print": 1, "report": 1, "export": 1},
+  {"role": "TRT Cashier", "read": 1, "print": 1}
+ ]
+}

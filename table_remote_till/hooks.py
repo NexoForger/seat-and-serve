@@ -1,9 +1,12 @@
 app_name = "table_remote_till"
-app_title = "Table Remote Till"
-app_publisher = "Table Remote Till"
+app_title = "S&S (Seat & Serve)"
+app_publisher = "S&S (Seat & Serve)"
 app_description = "Multichannel POS and ERP operations"
 app_email = "dev@example.invalid"
 app_license = "mit"
+app_color = "#e8f574"
+app_logo_url = "/assets/table_remote_till/images/seat-and-serve.svg"
+app_home = "/app/table-remote-till"
 
 # Apps
 # ------------------
@@ -12,9 +15,9 @@ required_apps = ["frappe/erpnext", "frappe/hrms"]
 
 add_to_apps_screen = [{
 	"name": "table_remote_till",
-	"logo": "/assets/table_remote_till/images/table-remote-till.svg",
-	"title": "Table Remote Till",
-	"route": "/desk/table-remote-till",
+	"logo": app_logo_url,
+	"title": "S&S (Seat & Serve)",
+	"route": app_home,
 	"has_permission": "table_remote_till.install.has_app_permission",
 }]
 
@@ -40,8 +43,16 @@ add_to_apps_screen = [{
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {"TRT Import Job": "public/js/trt_import_job.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+_readable_doctypes = (
+	"TRT Business Setup", "TRT Device", "TRT FX Rate", "TRT Guest Appearance", "TRT Import Job",
+	"TRT Kitchen Station", "TRT Kitchen Ticket", "TRT Legacy Record",
+	"TRT Menu", "TRT Modifier Group", "TRT Onboarding Run", "TRT Order",
+	"TRT Outlet", "TRT Payment Attempt", "TRT Register", "TRT Reservation", "TRT Service Area",
+	"TRT Staff Assignment", "TRT Sync Event", "TRT Table",
+)
+doctype_js = {doctype: "public/js/trt_form_titles.js" for doctype in _readable_doctypes}
+doctype_js["TRT Import Job"] = ["public/js/trt_import_job.js", "public/js/trt_form_titles.js"]
+doctype_list_js = {doctype: "public/js/trt_list_titles.js" for doctype in _readable_doctypes}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -152,6 +163,12 @@ after_migrate = "table_remote_till.install.after_migrate"
 
 # Scheduled Tasks
 # ---------------
+
+scheduler_events = {
+	"cron": {
+		"* * * * *": ["table_remote_till.cleanup.expire_empty_addon_drafts"],
+	},
+}
 
 # scheduler_events = {
 # 	"all": [

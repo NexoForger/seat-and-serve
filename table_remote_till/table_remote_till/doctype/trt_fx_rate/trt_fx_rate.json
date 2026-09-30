@@ -4,6 +4,8 @@
  "module": "Table Remote Till",
  "engine": "InnoDB",
  "autoname": "hash",
+ "title_field": "effective_date",
+ "show_title_field_in_link": 1,
  "istable": 0,
  "field_order": [
   "outlet",

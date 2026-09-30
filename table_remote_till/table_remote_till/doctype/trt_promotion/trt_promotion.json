@@ -1,0 +1,21 @@
+{
+ "doctype": "DocType", "name": "TRT Promotion", "module": "Table Remote Till", "engine": "InnoDB",
+ "autoname": "field:code", "title_field": "title", "show_title_field_in_link": 1,
+ "field_order": ["code", "title", "outlet", "enabled", "discount_type", "discount_value", "minimum_total", "valid_from", "valid_until", "max_uses"],
+ "fields": [
+  {"fieldname": "code", "fieldtype": "Data", "label": "Coupon Code", "reqd": 1, "unique": 1, "in_list_view": 1},
+  {"fieldname": "title", "fieldtype": "Data", "label": "Title", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "outlet", "fieldtype": "Link", "label": "Outlet", "options": "TRT Outlet", "reqd": 1},
+  {"fieldname": "enabled", "fieldtype": "Check", "label": "Enabled", "default": "1", "in_list_view": 1},
+  {"fieldname": "discount_type", "fieldtype": "Select", "label": "Discount Type", "options": "Percentage\nAmount", "reqd": 1},
+  {"fieldname": "discount_value", "fieldtype": "Currency", "label": "Discount Value", "reqd": 1},
+  {"fieldname": "minimum_total", "fieldtype": "Currency", "label": "Minimum Bill Total"},
+  {"fieldname": "valid_from", "fieldtype": "Date", "label": "Valid From"},
+  {"fieldname": "valid_until", "fieldtype": "Date", "label": "Valid Until"},
+  {"fieldname": "max_uses", "fieldtype": "Int", "label": "Maximum Uses", "description": "Zero means unlimited; each paid table session counts once."}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "report": 1, "export": 1},
+  {"role": "TRT Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "report": 1, "export": 1}
+ ]
+}

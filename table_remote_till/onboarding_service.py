@@ -319,7 +319,14 @@ def _apply_normalized(config):
 
 
 def _seed_samples(config, outlet, price_list, menu, area, station, created):
-	"""Create unmistakable, non-stock examples without posting financial history."""
+	"""Create sample sale items with raw-material BOMs and no financial history."""
+	from table_remote_till.demo_seed import (
+		SAMPLE_RECIPES, _create_sample_bom, _ensure_raw_materials,
+	)
+
+	raw_created = []
+	_ensure_raw_materials(raw_created)
+	created.extend({"doctype": doctype, "name": name} for doctype, name in raw_created)
 	group = frappe.db.get_value("Item Group", {"is_group": 0}, "name")
 	marker = hashlib.sha256(outlet.name.encode()).hexdigest()[:8].upper()
 	base = 100000 if outlet.base_currency == "LBP" else 1
@@ -332,8 +339,16 @@ def _seed_samples(config, outlet, price_list, menu, area, station, created):
 		item_code = f"TRT-SAMPLE-{marker}-{suffix}"
 		item = _insert("Item", item_code=item_code, item_name=title, item_group=group,
 			stock_uom="Nos", is_stock_item=0, is_sales_item=1,
-			description="Table Remote Till sample item. Remove before live sales.")
+			description="S&S (Seat & Serve) sample item. Remove before live sales.")
 		created.append({"doctype": "Item", "name": item.name})
+		recipe = {
+			"F1": SAMPLE_RECIPES["BURGER"], "F2": SAMPLE_RECIPES["FRIES"],
+			"F3": SAMPLE_RECIPES["COLA"], "R1": SAMPLE_RECIPES["WATER"],
+			"R2": (("NOTEBOOKUNIT", 1),), "R3": (("SNACKBARUNIT", 1),),
+		}[suffix]
+		bom_name = _create_sample_bom(item.name, outlet.company, recipe)
+		if bom_name:
+			created.append({"doctype": "BOM", "name": bom_name})
 		price = _insert("Item Price", item_code=item.name, price_list=price_list,
 			selling=1, price_list_rate=rate * base, valid_from=today())
 		created.append({"doctype": "Item Price", "name": price.name})

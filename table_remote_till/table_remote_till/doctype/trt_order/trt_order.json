@@ -4,12 +4,18 @@
  "module": "Table Remote Till",
  "engine": "InnoDB",
  "autoname": "hash",
+ "title_field": "order_number",
+ "show_title_field_in_link": 1,
  "istable": 0,
  "field_order": [
+  "order_number",
   "outlet",
   "register",
   "channel",
   "table",
+  "guest_count",
+  "parent_order",
+  "reservation",
   "tab_label",
   "customer",
   "status",
@@ -19,14 +25,30 @@
   "net_total",
   "tax_total",
   "grand_total",
+  "promotion",
+  "manual_discount_type",
+  "manual_discount_value",
+  "manual_discount_reason",
+  "loyalty_points_to_redeem",
+  "loyalty_amount_redeemed",
   "revision",
   "external_id",
   "guest_session",
   "pos_invoice",
   "pickup_time",
+  "runner_dispatched_at",
+  "runner_dispatched_by",
   "notes"
  ],
  "fields": [
+  {
+   "fieldname": "order_number",
+   "fieldtype": "Data",
+   "label": "Order Number",
+   "read_only": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
   {
    "fieldname": "outlet",
    "fieldtype": "Link",
@@ -54,6 +76,20 @@
    "label": "Table",
    "options": "TRT Table"
   },
+  {
+   "fieldname": "guest_count",
+   "fieldtype": "Int",
+   "label": "Guests",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "parent_order",
+   "fieldtype": "Link",
+   "label": "Add-on To",
+   "options": "TRT Order"
+  },
+  {"fieldname": "reservation", "fieldtype": "Link", "label": "Reservation", "options": "TRT Reservation", "read_only": 1},
   {
    "fieldname": "tab_label",
    "fieldtype": "Data",
@@ -110,6 +146,12 @@
    "label": "Grand Total",
    "read_only": 1
   },
+  {"fieldname": "promotion", "fieldtype": "Link", "label": "Coupon", "options": "TRT Promotion", "read_only": 1},
+  {"fieldname": "manual_discount_type", "fieldtype": "Select", "label": "Manual Discount Type", "options": "\nPercentage\nAmount", "read_only": 1},
+  {"fieldname": "manual_discount_value", "fieldtype": "Currency", "label": "Manual Discount Value", "read_only": 1},
+  {"fieldname": "manual_discount_reason", "fieldtype": "Small Text", "label": "Manual Discount Reason", "read_only": 1},
+  {"fieldname": "loyalty_points_to_redeem", "fieldtype": "Int", "label": "Loyalty Points To Redeem", "read_only": 1},
+  {"fieldname": "loyalty_amount_redeemed", "fieldtype": "Currency", "label": "Loyalty Amount Redeemed", "read_only": 1},
   {
    "fieldname": "revision",
    "fieldtype": "Int",
@@ -141,6 +183,19 @@
    "fieldname": "pickup_time",
    "fieldtype": "Datetime",
    "label": "Pickup Time"
+  },
+  {
+   "fieldname": "runner_dispatched_at",
+   "fieldtype": "Datetime",
+   "label": "Runner Dispatched At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "runner_dispatched_by",
+   "fieldtype": "Link",
+   "label": "Runner Dispatched By",
+   "options": "User",
+   "read_only": 1
   },
   {
    "fieldname": "notes",

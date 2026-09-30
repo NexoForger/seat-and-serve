@@ -34,6 +34,7 @@ venv.bak/
 
 # Dependency directories
 node_modules/
+table_remote_till/public/node_modules
 jspm_packages/
 
 # IDEs and editors

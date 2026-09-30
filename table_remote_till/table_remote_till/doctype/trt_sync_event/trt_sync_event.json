@@ -4,6 +4,8 @@
  "module": "Table Remote Till",
  "engine": "InnoDB",
  "autoname": "hash",
+ "title_field": "event_type",
+ "show_title_field_in_link": 1,
  "istable": 0,
  "field_order": [
   "event_id",
@@ -60,7 +62,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Pending\nApplied\nConflict",
+   "options": "Pending\nApplied\nConflict\nExpired",
    "default": "Pending"
   },
   {

@@ -1,0 +1,306 @@
+.register-shell {
+  --register-black: #10120f;
+  --register-side: #1a1d19;
+  --register-canvas: #242821;
+  --register-seam: #42483b;
+  --register-accent: #e8f574;
+  display: grid;
+  grid-template-columns: clamp(258px, 27vw, 320px) minmax(0, 1fr);
+  grid-template-rows: 52px minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  color: #f7f7f7;
+  background: var(--register-canvas);
+  font: 13px/1.35 'DM Sans', Arial, sans-serif;
+}
+
+.register-shell h1,
+.register-shell h2,
+.register-shell h3,
+.register-shell button,
+.register-shell input,
+.register-shell select {
+  font-family: 'DM Sans', Arial, sans-serif;
+  letter-spacing: 0;
+}
+
+.register-identity,
+.register-categories {
+  background: var(--register-black);
+  min-width: 0;
+  height: 52px;
+}
+
+.register-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  position: relative;
+  border-inline-end: 1px solid #353a30;
+}
+
+.register-menu-button {
+  flex: 0 0 38px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 21px;
+  text-align: center;
+}
+
+.register-menu-button:hover,
+.register-search-toggle:hover { background: #30362a; }
+.register-name { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.register-name strong { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.register-name small { font-size: 10px; color: #b9c0b0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.register-identity > select { width: 82px; max-width: 82px; min-height: 44px; border: 0; color: #fff; background: var(--register-black); font-size: 11px; }
+.register-identity > select option { color: #111; background: #fff; }
+.register-tools { position: absolute; z-index: 20; top: 52px; inset-inline-start: 0; width: min(320px, 100vw); display: grid; padding: 8px; background: #20251d; border: 1px solid #464e3f; border-radius: 0 0 12px 12px; box-shadow: 0 12px 24px #0008; }
+.register-tools a,
+.register-tools button { display: block; width: 100%; padding: 13px 14px; color: #fff; background: transparent; border: 0; text-align: start; font-size: 13px; }
+.register-tools a:hover,
+.register-tools button:hover { background: #3a4233; }
+
+.register-categories { display: flex; align-items: center; gap: clamp(4px, .8vw, 12px); padding-inline: clamp(6px, 1vw, 14px); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.register-categories > button { flex: 1 1 0; min-width: 0; min-height: 38px; padding: 0 clamp(8px, 1.2vw, 16px); border: 1px solid transparent; border-radius: 8px; color: #d7ddcf; background: transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.register-categories > button:hover { background: #30362a; }
+.register-categories > button.active { color: #151714; border-color: var(--register-accent); background: var(--register-accent); margin: 0; }
+.register-categories > button.register-deals-tab { flex: 1.5 0 auto; min-width: fit-content; color: #f8eac1; border-color: #9a763e; background: #403723; font-weight: 700; }
+.register-categories > button.register-deals-tab.active { color: #20180b; border-color: #f8cf74; background: #f8cf74; }
+.register-categories .register-search-toggle { flex: 0 0 52px; min-width: 52px; width: 52px; margin-inline-start: auto; }
+.register-search-toggle svg { width: 18px; height: 18px; }
+
+.register-order { min-height: 0; display: flex; flex-direction: column; background: var(--register-side); border-inline-end: 1px solid #42483b; min-width: 0; overflow-y: auto; overflow-x: hidden; }
+.register-order-status { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 13px; background: #2b3027; color: #fff; font-size: 12px; }
+.register-sale-context { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-bottom: 1px solid #3a4234; background: #30382b; }
+.register-sale-context strong { color: #f6f8f1; font-size: 12px; }
+.register-sale-context button, .register-table-context-head button { min-height: 30px; padding: 5px 8px; border: 1px solid #647256; border-radius: 6px; color: var(--register-accent); background: #1c211a; font-size: 10px; }
+.register-sale-context button:hover, .register-table-context-head button:hover { border-color: var(--register-accent); }
+.register-table-context { display: grid; gap: 4px; padding: 10px 13px; border-bottom: 1px solid #3a4234; background: #222820; }
+.register-table-context-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.register-table-context strong { color: var(--register-accent); font-size: 14px; }
+.register-table-context > span { color: #c4cbbb; font-size: 11px; }
+.register-table-context label { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #dce1d7; font-size: 11px; }
+.register-table-context input { width: 62px; min-height: 30px; padding: 4px 7px; border: 1px solid #5a6752; border-radius: 6px; color: #fff; background: #171c16; text-align: center; }
+.register-table-context .register-ticket-select { display: grid; align-items: stretch; gap: 4px; margin-top: 5px; }
+.register-ticket-select select { width: 100%; min-height: 38px; padding: 6px 8px; border: 1px solid #68765a; border-radius: 7px; color: #fff; background: #171c16; font-size: 11px; }
+.register-led { display: inline-block; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--register-accent); }
+.register-order-count { margin-inline-start: auto; color: #ddd; }
+.register-channel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 82px; gap: 3px; padding: 6px; background: #1a1d19; }
+.register-channel button,
+.register-channel select { min-width: 0; min-height: 44px; padding: 6px 3px; border: 0; border-radius: 6px; color: #eee; background: #353b31; font-size: 12px; text-align: center; }
+.register-channel button.active,
+.register-channel select.active { color: #151714; background: var(--register-accent); box-shadow: none; }
+.register-channel button:disabled,
+.register-channel select:disabled { opacity: .62; }
+.register-channel select option { color: #151515; background: #fff; }
+.register-tab-name { display: grid; gap: 5px; padding: 12px; color: #ddd; font-size: 12px; }
+.register-tab-name input { min-width: 0; min-height: 44px; padding: 9px; border: 1px solid #586050; border-radius: 7px; background: #252a22; color: #fff; }
+.register-lines { min-height: 180px; flex: 1; overflow-y: auto; }
+.register-empty-order { padding: 25px 14px; color: #b4b4b4; font-size: 12px; }
+.register-feedback { margin: 9px 10px; }
+.register-flow-feedback { margin: 8px 0 14px; }
+.register-line-list { position: relative; }
+.order-line-enter-active, .order-line-leave-active, .register-item-enter-active, .register-item-leave-active, .table-card-enter-active, .table-card-leave-active { transition: opacity .14s ease, transform .14s ease; }
+.order-line-enter-from, .order-line-leave-to, .register-item-enter-from, .register-item-leave-to, .table-card-enter-from, .table-card-leave-to { opacity: 0; transform: translateY(5px); }
+.order-line-move, .register-item-move, .table-card-move { transition: transform .14s ease; }
+.order-line-leave-active, .register-item-leave-active, .table-card-leave-active { position: absolute; }
+.register-panel-enter-active, .register-panel-leave-active, .register-drop-enter-active, .register-drop-leave-active { transition: opacity .15s ease, transform .15s ease; transform-origin: top; }
+.register-panel-enter-from, .register-panel-leave-to, .register-drop-enter-from, .register-drop-leave-to { opacity: 0; transform: translateY(-5px) scaleY(.97); }
+.register-shell .register-order-count { transition: transform .15s ease, color .15s ease; }
+.register-shell:has(.register-line-list) .register-order-count { color: var(--register-accent); }
+.register-type-card, .register-table-card, .register-item, .register-qty button, .register-actions button { transition: transform .12s ease, border-color .12s ease, background-color .12s ease, box-shadow .12s ease; }
+.register-type-card:active:not(:disabled), .register-table-card:active:not(:disabled), .register-item:active:not(:disabled), .register-qty button:active:not(:disabled) { transform: scale(.98); }
+.register-payment-warning { border-inline-start: 3px solid #f1c66f; }
+.register-confirm-payment:disabled { cursor: not-allowed; }
+.register-confirm-payment:not(:disabled):active { transform: scale(.99); }
+.register-line { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; border-bottom: 1px solid #383e34; padding: 12px; font-size: 12px; }
+.register-line strong { font-weight: 500; }
+.register-line > strong { white-space: nowrap; }
+.register-line-modifiers { display: block; margin-top: 4px; color: #bfcda8; line-height: 1.35; overflow-wrap: anywhere; }
+.register-qty { display: inline-flex; align-items: center; gap: 0; border: 1px solid #5c6556; border-radius: 7px; overflow: hidden; margin-top: 7px; }
+.register-qty button { width: 40px; height: 40px; color: #fff; background: #373e34; border: 0; font-size: 20px; }
+.register-qty span { min-width: 30px; text-align: center; }
+
+.register-summary { background: #262b23; }
+.register-summary-label { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 0 13px; color: #fff; font-size: 12px; }
+.register-summary-label > span:last-child { margin-inline-start: auto; font-size: 11px; color: #c3c3c3; }
+.register-bill-context { display: grid; gap: 3px; padding: 7px 13px; color: #e8f574; background: #30392b; font-size: 10px; }
+.register-bill-context span { color: #c3cbbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.register-total { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 5px; padding: 0 14px; color: #171917; background: var(--register-accent); font-size: 21px; }
+.register-total strong { font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.register-breakdown { display: flex; justify-content: space-between; gap: 7px; flex-wrap: wrap; padding: 10px 13px; font-size: 10px; color: #dedede; }
+.register-savings { display: grid; gap: 4px; padding: 0 13px 10px; color: #e8f574; font-size: 11px; }
+.register-savings strong { padding-top: 4px; border-top: 1px solid #616b56; font-size: 12px; }
+.register-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: #282828; }
+.register-actions button { min-height: 56px; padding: 6px 4px; border: 0; color: #f5f5f5; background: #343b31; font-size: 11px; line-height: 1.25; }
+.register-actions button:first-child { color: #171917; background: var(--register-accent); font-weight: 700; }
+.register-actions button:hover:not(:disabled) { filter: brightness(1.18); }
+.register-actions button:disabled { opacity: .45; }
+.register-payment { display: grid; gap: 9px; padding: 13px; border-top: 1px solid #6a6a6a; }
+.register-payment h2 { margin: 0; font-size: 15px; }
+.register-payment p { margin: 0; font-size: 11px; color: #ddd; }
+.register-payment-summary { padding: 8px; color: #e8f574 !important; background: #30392b; line-height: 1.45; }
+.register-benefits { display: grid; gap: 9px; padding: 12px; border: 1px solid #657459; border-radius: 8px; background: #30392b; }
+.register-benefits h3 { margin: 0; color: #f3f8eb; font-size: 13px; }
+.register-benefits label { display: grid; gap: 5px; color: #e3eade; font-size: 11px; }
+.register-benefits input, .register-benefits select { width: 100%; min-width: 0; min-height: 37px; padding: 5px 8px; border: 1px solid #a8b29e; border-radius: 4px; background: #fff; color: #202820; font-size: 12px; }
+.register-benefits input:disabled, .register-benefits select:disabled { opacity: .55; }
+.register-customer-results { display: grid; max-height: 145px; overflow: auto; border: 1px solid #86957a; background: #f7f9f4; }
+.register-customer-results button { display: flex; justify-content: space-between; gap: 8px; padding: 8px; border: 0; border-bottom: 1px solid #d5dccf; background: transparent; color: #1f2d1c; text-align: start; font-size: 12px; }
+.register-customer-results button:hover { background: #e0ecd9; }
+.register-customer-results small { color: #5c6b57; }
+.register-inline-button { margin-inline-start: 4px; padding: 2px 4px; border: 0; color: #e8f574; background: transparent; text-decoration: underline; }
+.register-manual-discount { display: grid; gap: 8px; }
+.register-apply-benefits { min-height: 38px; border: 0; border-radius: 4px; background: var(--register-accent); color: #172113; font-weight: 700; font-size: 12px; }
+.register-apply-benefits:disabled { opacity: .55; }
+.register-amount-due { padding-top: 8px; border-top: 1px solid #718067; color: #f2f7eb; font-size: 13px; }
+.register-payment-warning { padding: 8px; background: #8c5b27; }
+.register-payment-warning a { text-decoration: underline; }
+.register-tender { display: grid; grid-template-columns: minmax(65px, 1fr) 65px 75px 38px; gap: 4px; }
+.register-tender select,
+.register-tender input { min-width: 0; width: 100%; min-height: 42px; border: 1px solid #999; background: #f7f7f7; color: #222; padding: 5px; font-size: 11px; }
+.register-tender button,
+.register-add-tender,
+.register-confirm-payment { min-height: 42px; color: #fff; background: #5b5b5b; border: 1px solid #888; font-size: 11px; }
+.register-confirm-payment { color: #171917; background: var(--register-accent); border: 0; font-weight: 700; }
+.register-invoice { margin: 0; padding: 10px 13px; background: #3c5224; font-size: 11px; }
+
+.register-catalog { min-width: 0; min-height: 0; padding: 25px 24px 40px; background: var(--register-canvas); overflow: auto; overscroll-behavior: contain; }
+.register-shell-flow { grid-template-columns: minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr); }
+.register-shell-flow .register-identity { border-inline-end: 0; border-bottom: 1px solid #353a30; }
+.register-flow-main { min-height: calc(100vh - 52px); padding: clamp(20px, 4vw, 52px); }
+.register-flow { max-width: 1100px; margin-inline: auto; }
+.register-flow-eyebrow { margin: 0 0 6px; color: var(--register-accent); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.register-flow h1 { margin: 0; font-size: clamp(27px, 3.3vw, 42px); line-height: 1.15; letter-spacing: -.035em; }
+.register-flow-copy { margin: 9px 0 22px; color: #c4cdbd; font-size: 14px; line-height: 1.5; }
+.register-flow-notice { padding: 14px; border: 1px solid #59664e; border-radius: 10px; color: #eaf1df; background: #30392b; }
+.register-type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.register-type-card { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto auto; align-content: start; gap: 10px 12px; min-height: 160px; padding: 20px; border: 1px solid #5a6950; border-radius: 13px; color: #f6f8f1; background: #303a2d; text-align: start; }
+.register-type-card:hover:not(:disabled), .register-type-card:focus-visible { border-color: var(--register-accent); background: #3a4831; }
+.register-type-card:disabled { opacity: .6; }
+.register-type-icon { grid-column: 1 / -1; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 9px; color: #171917; background: var(--register-accent); }
+.register-type-icon svg { width: 22px; height: 22px; }
+.register-type-card strong { grid-column: 1; font-size: 19px; }
+.register-type-card small { grid-column: 1; color: #ccd5c7; font-size: 12px; line-height: 1.4; }
+.register-type-card > svg { grid-column: 2; grid-row: 2 / 4; align-self: center; color: var(--register-accent); }
+.register-flow-back { min-height: 38px; margin-bottom: 20px; padding: 7px 12px; border: 1px solid #637057; border-radius: 7px; color: #e9f2df; background: #30392b; font-size: 12px; }
+.register-flow-heading { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 12px; }
+.register-reservation-entry, .register-reservation-link { display: inline-flex; align-items: center; min-height: 44px; margin-top: 16px; padding: 10px 15px; border: 1px solid #889b6c; border-radius: 8px; color: #ecf4e0; background: #3b4a30; font-size: 12px; text-decoration: none; }
+.register-reservation-entry:hover, .register-reservation-link:hover { border-color: var(--register-accent); }
+.register-reservation-link { margin: 0; }
+.register-table-card.reserved { border-color: #d2ab54; }
+.register-table-reservation { display: block; color: #f6da97; font-size: 10px; line-height: 1.3; }
+.register-reservation-layout { display: grid; grid-template-columns: minmax(295px, .8fr) minmax(330px, 1fr); gap: 16px; margin-top: 20px; align-items: start; }
+.register-reservation-form, .register-reservation-list { display: grid; gap: 14px; min-width: 0; padding: 18px; border: 1px solid #596b4b; border-radius: 11px; color: #edf3e6; background: #222b1e; }
+.register-reservation-form h2, .register-reservation-list h2 { margin: 0; font-size: 17px; }
+.register-reservation-form > strong { font-size: 12px; }
+.register-reservation-form label { display: grid; gap: 5px; min-width: 0; color: #d9e3d1; font-size: 11px; }
+.register-reservation-form input, .register-reservation-form select, .register-reservation-form textarea { width: 100%; min-width: 0; min-height: 39px; padding: 8px; border: 1px solid #a5b498; border-radius: 6px; background: #f8faf5; color: #1f291b; font-size: 12px; }
+.register-reservation-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.register-reservation-slots { display: flex; flex-wrap: wrap; gap: 7px; max-height: 170px; overflow-y: auto; }
+.register-reservation-slots button { min-width: 65px; min-height: 37px; padding: 5px 9px; border: 1px solid #80976d; border-radius: 6px; background: #364430; color: #fff; font-size: 12px; }
+.register-reservation-slots button.active { color: #1b2615; border-color: var(--register-accent); background: var(--register-accent); font-weight: 800; }
+.register-reservation-slots span { color: #c2ccb9; font-size: 11px; }
+.register-reservation-primary { min-height: 43px; padding: 8px 13px; border: 0; border-radius: 6px; background: var(--register-accent); color: #182215; font-weight: 800; font-size: 12px; }
+.register-reservation-primary:disabled { opacity: .5; }
+.register-reservation-list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.register-reservation-list-head button { min-height: 32px; padding: 5px 9px; border: 1px solid #829475; border-radius: 6px; color: #fff; background: #3a4833; }
+.register-reservation-list > p { margin: 0; color: #c9d4be; font-size: 12px; }
+.register-reservation-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; padding: 12px; border: 1px solid #536449; border-radius: 8px; background: #303b2b; }
+.register-reservation-row > div:first-child { display: grid; gap: 4px; min-width: 0; }
+.register-reservation-row strong { font-size: 13px; }
+.register-reservation-row span, .register-reservation-row small { color: #c7d3bd; font-size: 11px; overflow-wrap: anywhere; }
+.register-reservation-row b { align-self: start; padding: 4px 7px; border-radius: 5px; color: #1f3117; background: #e8f574; font-size: 10px; white-space: nowrap; }
+.register-reservation-row b.status-cancelled, .register-reservation-row b.status-no-show { color: #e1e1e1; background: #555; }
+.register-reservation-row b.status-completed { color: #d4efc7; background: #365437; }
+.register-reservation-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.register-reservation-actions button { min-height: 32px; padding: 5px 9px; border: 1px solid #839970; border-radius: 5px; background: #46583b; color: #f4f8ed; font-size: 11px; }
+.register-reservation-actions button:first-child { color: #182214; background: var(--register-accent); border-color: var(--register-accent); font-weight: 700; }
+.register-table-flow .register-flow-copy { margin-bottom: 16px; }
+.register-area { margin: 18px 0 28px; }
+.register-area h2 { margin: 0 0 10px; color: #eff4e8; font-size: 14px; }
+.register-table-flow .register-table-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.register-table-flow .register-table-card { min-height: 126px; padding: 16px; }
+.register-table-flow .register-table-number { font-size: 21px; }
+.register-table-flow .register-table-capacity { font-size: 12px; }
+.register-table-flow .register-table-orders { font-size: 11px; }
+.register-table-map { margin-bottom: 25px; padding: 15px; border: 1px solid #4c5841; border-radius: 14px; background: #1c211a; }
+.register-map-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 12px; }
+.register-map-heading h1 { margin: 2px 0 0; color: #f7f8f3; font-size: 18px; letter-spacing: -.5px; }
+.register-map-controls { display: flex; align-items: center; gap: 10px; color: #bac3ac; font-size: 11px; white-space: nowrap; }
+.register-map-controls button { min-height: 32px; padding: 5px 10px; border: 1px solid #68765a; border-radius: 7px; color: #f1f5e8; background: #333c2e; font-size: 11px; }
+.register-map-controls button:hover:not(:disabled) { border-color: var(--register-accent); }
+.register-map-eyebrow { margin: 0; color: var(--register-accent); font-size: 9px; font-weight: 800; letter-spacing: .14em; }
+.register-table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 9px; }
+.register-table-card { min-height: 92px; display: grid; gap: 5px; align-content: center; padding: 11px; border: 1px solid #4d5944; border-radius: 10px; color: #f2f5ee; background: #2d3629; text-align: start; }
+.register-table-card:hover, .register-table-card:focus-visible { border-color: var(--register-accent); filter: brightness(1.12); }
+.register-table-card.selected { border-color: var(--register-accent); box-shadow: 0 0 0 2px #e8f57455; }
+.register-table-card.occupied { background: #3b3828; }
+.register-table-card.runner-needed { border-color: #e8f574; background: #41492b; }
+.register-table-runner { width: fit-content; padding: 5px 8px; border-radius: 4px; color: #1d2813; background: #e8f574; font-size: 10px; font-weight: 800; }
+.register-table-card:disabled { opacity: .65; }
+.register-table-number { font-size: 15px; font-weight: 750; }
+.register-table-capacity { color: #d0d8c6; font-size: 11px; }
+.register-table-orders { color: #f2df9a; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.register-table-orders.available { color: #a7c77b; }
+.register-ticket-picker { margin-top: 14px; padding-top: 13px; border-top: 1px solid #46513d; }
+.register-ticket-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 9px; }
+.register-ticket-heading strong { color: #f1f5e8; font-size: 12px; }
+.register-ticket-heading span { color: #b7c2aa; font-size: 10px; }
+.register-ticket-list { display: flex; flex-wrap: wrap; gap: 7px; max-height: 145px; overflow-y: auto; scrollbar-width: thin; }
+.register-ticket { min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid #58644e; border-radius: 8px; color: #f0f4e8; background: #30392b; font-size: 11px; }
+.register-ticket strong { font-size: 12px; }
+.register-ticket span { color: #e9d887; }
+.register-ticket b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.register-ticket:hover:not(:disabled), .register-ticket.active { border-color: var(--register-accent); background: #455331; }
+.register-ticket:disabled { opacity: .6; }
+.register-search { display: flex; align-items: center; gap: 8px; max-width: 450px; margin-bottom: 22px; padding: 0 12px; background: #171a16; border: 1px solid #596151; border-radius: 9px; }
+.register-search input { flex: 1; min-width: 0; min-height: 46px; color: #fff; background: transparent; border: 0; outline: none; }
+.register-search input::placeholder { color: #bbb; }
+.register-group { margin: 16px 0 30px; }
+.register-group h2 { margin: 0 0 8px; color: #f1f1f1; font-size: 13px; font-weight: 400; }
+.register-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; max-width: 950px; }
+.register-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 94px; padding: 9px 6px; border: 1px solid #566244; border-radius: 10px; color: #f6f7f2; background: #37412e; text-align: center; line-height: 1.2; font-size: 12px; overflow-wrap: anywhere; }
+.register-item small { font-size: 10px; opacity: .88; }
+.register-deal-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
+.register-deal-item { align-items: flex-start; min-height: 132px; padding: 12px; border-color: #a67e3b; background: #433821; text-align: start; }
+.register-deal-item em { color: #f8d784; font-size: 9px; font-style: normal; font-weight: 800; letter-spacing: .08em; }
+.register-deal-item span { font-size: 13px; font-weight: 700; }
+.register-deal-item .register-deal-description { color: #e5d8b5; line-height: 1.3; }
+.register-deal-item small:last-child { margin-top: auto; color: #fbe08f; font-size: 13px; font-weight: 700; }
+.register-item.tone-1 { background: #303e39; border-color: #4f6b5b; }
+.register-item.tone-2 { background: #403a2a; border-color: #706446; }
+.register-item.tone-3 { background: #3d3540; border-color: #67566b; }
+.register-item:hover:not(:disabled),
+.register-item:focus-visible { filter: brightness(1.18); }
+.register-item:disabled { opacity: .5; }
+.register-catalog-empty { min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #e6e6e6; padding: 25px; }
+.register-catalog-empty svg { width: 28px; height: 28px; margin-bottom: 14px; }
+.register-catalog-empty h1 { margin: 0 0 8px; font-size: 18px; }
+.register-catalog-empty p { max-width: 310px; font-size: 12px; color: #c9c9c9; line-height: 1.5; }
+.register-catalog-empty button,
+.register-catalog-empty a { min-height: 44px; display: inline-flex; align-items: center; padding: 10px 16px; color: #171917; background: var(--register-accent); border: 0; border-radius: 8px; }
+.register-shell :focus-visible { outline: 3px solid var(--register-accent); outline-offset: 2px; }
+
+@media (max-width: 700px) {
+  .register-shell { height: auto; min-height: 100dvh; overflow: visible; grid-template-columns: 1fr; grid-template-rows: 52px auto auto auto; }
+  .register-shell-flow { grid-template-rows: 52px minmax(0, 1fr); }
+  .register-identity { border-inline-end: 0; }
+  .register-categories { grid-row: 2; height: 54px; }
+  .register-order { min-height: 0; grid-row: 3; overflow: visible; }
+  .register-lines { min-height: 120px; max-height: 32vh; }
+  .register-catalog { grid-row: 4; padding: 18px 12px 28px; overflow: visible; }
+  .register-flow-main { grid-row: 2; padding: 22px 14px; }
+  .register-item-grid { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); }
+  .register-reservation-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 1030px) and (min-width: 701px) { .register-reservation-layout { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .register-shell * { scroll-behavior: auto; }
+}

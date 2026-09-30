@@ -11,6 +11,8 @@
   "name_en",
   "name_ar",
   "price_override",
+  "deal_kind",
+  "deal_description",
   "modifier_group",
   "station",
   "available",
@@ -45,6 +47,19 @@
    "fieldname": "price_override",
    "fieldtype": "Currency",
    "label": "Price Override"
+  },
+  {
+   "fieldname": "deal_kind",
+   "fieldtype": "Select",
+   "label": "Register Deal Type",
+   "options": "\nCombo\nOffer",
+   "description": "Show this item in the register's Combo deals / Offers section. The item rate or price override is the final tax-inclusive deal price."
+  },
+  {
+   "fieldname": "deal_description",
+   "fieldtype": "Small Text",
+   "label": "Deal Contents",
+   "description": "Shown on the register and kitchen ticket; list everything included in the deal."
   },
   {
    "fieldname": "modifier_group",

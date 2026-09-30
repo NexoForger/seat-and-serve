@@ -6,15 +6,18 @@ import csv
 import hashlib
 import io
 import json
+import unicodedata
 from collections import Counter, defaultdict
 from decimal import Decimal, InvalidOperation
 
 import frappe
+from frappe.utils import today
 from openpyxl import load_workbook
 
 
 HISTORY_TYPES = ("Sale", "Return", "Payment", "Purchase", "Stock", "Journal", "Employee")
 ALL_TYPES = ("Item", "Customer", "Supplier", *HISTORY_TYPES)
+SOURCES = {"Omega POS", "BIM POS", "Squirrel Cloud", "Squirrel 11", "Generic"}
 MASTER_FIELDS = {
 	"Item": ("name", "item_group", "stock_uom"),
 	"Customer": ("name", "customer_group", "territory"),
@@ -33,6 +36,40 @@ ALIASES = {
 	"date": ("posting_date", "transaction_date", "date", "created_at"),
 	"branch": ("branch", "store", "location", "outlet"),
 	"amount": ("grand_total", "total", "amount", "net_amount"),
+	"selling_rate": ("selling_rate", "selling_price", "sale_price", "retail_price", "unit_price", "price"),
+	"currency": ("currency", "currency_code", "price_currency"),
+}
+
+# BIM POS sells multiple product lines, so these are suggestions only. Every
+# client reviews the actual exported headers before importing.
+BIM_ALIASES = {
+	"Item": {
+		"source_id": ("prodnum", "product_id", "product_number", "plu"),
+		"name": ("prodname", "product_name", "product_description"),
+		"code": ("product_code", "prodcode", "sku", "barcode"),
+		"item_group": ("category_name", "category", "department_name", "family"),
+		"stock_uom": ("unit_of_measure", "uom", "unit"),
+		"is_stock_item": ("stockable", "has_stock", "is_stock_item"),
+		"selling_rate": ("saleprice", "selling_price", "price", "unit_price"),
+		"currency": ("currency", "currency_code", "price_currency"),
+	},
+	"Customer": {
+		"source_id": ("custnum", "customer_id", "customer_number", "client_id"),
+		"name": ("custname", "customer_name", "client_name"),
+		"customer_group": ("customer_group", "customer_type", "group_name"),
+		"territory": ("territory", "area", "zone", "region"),
+	},
+	"Supplier": {
+		"source_id": ("vendornum", "vendor_id", "supplier_id", "supplier_number"),
+		"name": ("vendor_name", "supplier_name"),
+		"supplier_group": ("vendor_group", "supplier_group", "group_name"),
+	},
+	"History": {
+		"source_id": ("transaction_id", "invoice_number", "receipt_number", "check_number", "ticket_number"),
+		"date": ("posting_date", "transaction_date", "business_date", "date"),
+		"branch": ("branch_name", "branch_id", "store", "location"),
+		"amount": ("grand_total", "total_amount", "amount", "total"),
+	},
 }
 
 
@@ -42,15 +79,20 @@ def _manager():
 
 
 @frappe.whitelist(methods=["POST"])
-def new_job(source, record_type):
+def new_job(source, record_type, target_price_list=None):
 	"""Create an import job directly from the onboarding wizard."""
 	_manager()
-	if source not in {"Omega POS", "Squirrel Cloud", "Squirrel 11", "Generic"}:
+	if source not in SOURCES:
 		frappe.throw("Choose a supported source")
 	if record_type not in ALL_TYPES:
 		frappe.throw("Choose a supported record type")
+	if target_price_list:
+		if record_type != "Item" or not frappe.db.exists("Price List", {
+			"name": target_price_list, "selling": 1, "enabled": 1}):
+			frappe.throw("Choose an enabled selling Price List for Item prices")
 	job = frappe.get_doc({"doctype": "TRT Import Job", "source": source,
-		"record_type": record_type, "status": "Uploaded"}).insert(ignore_permissions=True)
+		"record_type": record_type, "target_price_list": target_price_list,
+		"status": "Uploaded"}).insert(ignore_permissions=True)
 	return {"job": job.name, "import_supported": record_type in MASTER_FIELDS}
 
 
@@ -78,25 +120,42 @@ def attach_export(job_name, file_name):
 def _rows(job):
 	if not job.source_file:
 		frappe.throw("Attach a private CSV or XLSX export")
-	file_name = frappe.db.get_value("File", {"file_url": job.source_file}, "name")
+	file_name = frappe.db.get_value("File", {"file_url": job.source_file,
+		"attached_to_doctype": job.doctype, "attached_to_name": job.name,
+		"is_private": 1}, "name")
 	if not file_name:
-		frappe.throw("Attached file was not found")
+		frappe.throw("Private export attached to this import job was not found")
 	file = frappe.get_doc("File", file_name)
 	if not file.is_private:
 		frappe.throw("Legacy exports must be private")
-	content = file.get_content()
+	# Frappe's default get_content() guesses text encodings and can decode an
+	# Arabic Windows-1256 CSV as a different single-byte codec. Read raw bytes.
+	content = file.get_content(encodings=[])
 	if isinstance(content, str):
 		content = content.encode("utf-8")
 	if len(content) > 20_000_000:
 		frappe.throw("Export exceeds 20 MB; split by period")
 	if job.source_file.lower().endswith(".csv"):
-		reader = csv.DictReader(io.StringIO(content.decode("utf-8-sig")))
-		return list(reader.fieldnames or []), list(reader)
+		try:
+			decoded = content.decode("utf-8-sig")
+		except UnicodeDecodeError:
+			decoded = content.decode("cp1256")
+		try:
+			dialect = csv.Sniffer().sniff(decoded[:8192], delimiters=",;\t|")
+		except csv.Error:
+			dialect = csv.excel
+		reader = csv.DictReader(io.StringIO(decoded), dialect=dialect)
+		headings = list(reader.fieldnames or [])
+		if len(headings) != len(set(headings)) or any(not heading.strip() for heading in headings):
+			frappe.throw("Export needs unique, non-empty column headers")
+		return headings, list(reader)
 	if job.source_file.lower().endswith(".xlsx"):
 		book = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
 		sheet = book.active
 		iterator = sheet.iter_rows(values_only=True)
 		headings = [str(cell).strip() if cell is not None else "" for cell in next(iterator)]
+		if len(headings) != len(set(headings)) or any(not heading for heading in headings):
+			frappe.throw("Export needs unique, non-empty column headers")
 		rows = [dict(zip(headings, ("" if cell is None else str(cell) for cell in row), strict=False))
 			for row in iterator]
 		book.close()
@@ -108,16 +167,25 @@ def _mapped(row, mapping, field):
 	return str(row.get(mapping.get(field, ""), "") or "").strip()
 
 
+def _normalized_heading(value):
+	value = unicodedata.normalize("NFKC", str(value)).casefold()
+	return "_".join("".join(char if char.isalnum() else " " for char in value).split())
+
+
 @frappe.whitelist()
 def suggest_mapping(job_name):
 	"""Suggest mappings from column names; the manager must review them."""
 	_manager()
 	job = frappe.get_doc("TRT Import Job", job_name)
 	headings, _ = _rows(job)
-	normalized = {"".join(ch.lower() if ch.isalnum() else "_" for ch in heading).strip("_"): heading
-		for heading in headings}
+	normalized = {_normalized_heading(heading): heading for heading in headings}
 	suggestions = {}
-	for semantic, aliases in ALIASES.items():
+	aliases_by_field = dict(ALIASES)
+	if job.source == "BIM POS":
+		presets = BIM_ALIASES.get(job.record_type, BIM_ALIASES["History"])
+		aliases_by_field = {field: (*presets.get(field, ()), *aliases)
+			for field, aliases in ALIASES.items()}
+	for semantic, aliases in aliases_by_field.items():
 		for alias in aliases:
 			if alias in normalized:
 				suggestions[semantic] = normalized[alias]
@@ -136,8 +204,17 @@ def _inspect(job, mapping):
 	headings, rows = _rows(job)
 	required = ("source_id",) + MASTER_FIELDS.get(job.record_type, ("date", "branch", "amount"))
 	missing_columns = [field for field in required if mapping.get(field) not in headings]
+	for optional in ("selling_rate", "currency") if job.record_type == "Item" else ():
+		if mapping.get(optional) and mapping[optional] not in headings:
+			missing_columns.append(optional)
 	if missing_columns:
 		frappe.throw("Map required columns: " + ", ".join(missing_columns))
+	price_currency = None
+	if job.record_type == "Item" and mapping.get("selling_rate"):
+		if not job.target_price_list or not frappe.db.exists("Price List", {
+			"name": job.target_price_list, "selling": 1, "enabled": 1}):
+			frappe.throw("Choose an enabled target selling Price List before previewing item prices")
+		price_currency = frappe.db.get_value("Price List", job.target_price_list, "currency")
 	totals = defaultdict(lambda: {"count": 0, "amount": Decimal(0)})
 	errors = []
 	seen = set()
@@ -152,6 +229,15 @@ def _inspect(job, mapping):
 		for field in required:
 			if not _mapped(row, mapping, field):
 				errors.append({"row": index, "error": f"Missing {field}"})
+		if job.record_type == "Item" and mapping.get("selling_rate") in headings:
+			try:
+				price = Decimal(_mapped(row, mapping, "selling_rate"))
+				if not price.is_finite() or price < 0:
+					raise InvalidOperation
+			except InvalidOperation:
+				errors.append({"row": index, "error": "Invalid selling rate"})
+			if mapping.get("currency") and _mapped(row, mapping, "currency") != price_currency:
+				errors.append({"row": index, "error": f"Price currency must be {price_currency}"})
 		amount = Decimal(0)
 		if job.record_type in HISTORY_TYPES:
 			try:
@@ -165,6 +251,8 @@ def _inspect(job, mapping):
 		bucket["amount"] += amount
 	return rows, {
 		"source": job.source, "record_type": job.record_type, "rows": len(rows),
+		"target_price_list": job.target_price_list,
+		"price_currency": price_currency,
 		"import_supported": job.record_type in MASTER_FIELDS,
 		"totals": [{"branch": branch, "period": period, "count": value["count"],
 			"amount": str(value["amount"])} for (branch, period), value in sorted(totals.items())],
@@ -227,6 +315,11 @@ def import_masters(job_name):
 		try:
 			doc = _make_master(job.record_type, row, mapping)
 			doc.insert(ignore_permissions=True)
+			if job.record_type == "Item" and mapping.get("selling_rate"):
+				frappe.get_doc({"doctype": "Item Price", "item_code": doc.name,
+					"price_list": job.target_price_list, "selling": 1,
+					"price_list_rate": float(Decimal(_mapped(row, mapping, "selling_rate"))),
+					"valid_from": today()}).insert(ignore_permissions=True)
 			frappe.get_doc({"doctype": "TRT Legacy Record", "source": job.source,
 				"record_type": job.record_type, "source_id": _mapped(row, mapping, "source_id"),
 				"source_key": key, "job": job.name, "frappe_doctype": doc.doctype,
@@ -249,6 +342,8 @@ def import_masters(job_name):
 @frappe.whitelist()
 def source_inventory(source):
 	_manager()
+	if source not in SOURCES:
+		frappe.throw("Choose a supported source")
 	jobs = frappe.get_all("TRT Import Job", filters={"source": source},
 		fields=["name", "record_type", "status", "imported_count", "error_count"])
 	covered = {job.record_type for job in jobs}

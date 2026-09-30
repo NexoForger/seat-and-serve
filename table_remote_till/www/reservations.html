@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171917">
+  <title>Reserve a table · S&S (Seat & Serve)</title>
+  <link rel="icon" href="/assets/table_remote_till/images/seat-and-serve.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/table_remote_till/css/reservations.css">
+</head>
+<body>
+  <div class="reservation-page">
+    <header class="reservation-header"><a href="/menu" class="reservation-brand">S&S (Seat & Serve)</a><span>TABLE RESERVATIONS</span></header>
+    <main class="reservation-layout">
+      <section class="reservation-intro">
+        <span class="eyebrow">MAKE TIME FOR THE TABLE</span>
+        <h1>Your table is waiting.</h1>
+        <p>Choose a time that works for your party. We will hold a suitable table and give you a booking reference right away.</p>
+        <div class="reservation-points"><span>01 <strong>Choose a place</strong></span><span>02 <strong>Pick a time</strong></span><span>03 <strong>Confirm your table</strong></span></div>
+      </section>
+      <section class="reservation-card" aria-labelledby="form-title">
+        <div id="booking-view">
+          <div class="card-heading"><span class="eyebrow">BOOK A TABLE</span><h2 id="form-title">Find a seat</h2></div>
+          <form id="reservation-form">
+            <div class="form-grid">
+              <label>Location<select id="outlet" required><option value="">Choose a location</option></select></label>
+              <label>Guests<input id="party-size" type="number" min="1" max="30" value="2" required></label>
+              <label>Date<input id="date" type="date" required></label>
+            </div>
+            <div class="time-heading"><strong>Available times</strong><small id="duration-label"></small></div>
+            <div id="slots" class="slots" role="group" aria-label="Available reservation times"><span class="empty-slots">Choose a location, date, and guest count.</span></div>
+            <div class="form-grid guest-fields">
+              <label>Your name<input id="guest-name" type="text" maxlength="100" autocomplete="name" required placeholder="Name for the booking"></label>
+              <label>Phone<input id="phone" type="tel" maxlength="25" autocomplete="tel" placeholder="+961…"></label>
+              <label>Email<input id="email" type="email" maxlength="140" autocomplete="email" placeholder="you@example.com"></label>
+            </div>
+            <label class="notes-label">Anything we should know? <span>Optional</span><textarea id="special-requests" rows="3" maxlength="500" placeholder="Accessibility, occasion, or seating request"></textarea></label>
+            <p class="contact-hint">Add a phone number or email address so the team can reach you if needed.</p>
+            <p id="message" class="message" role="status" aria-live="polite" hidden></p>
+            <button id="book-button" class="book-button" type="submit">Confirm reservation <span aria-hidden="true">↗</span></button>
+          </form>
+        </div>
+        <div id="confirmation" class="confirmation" hidden>
+          <span class="confirmation-mark">✓</span><span class="eyebrow">RESERVATION CONFIRMED</span>
+          <h2>See you soon.</h2><p id="confirmation-details"></p>
+          <strong id="confirmation-number"></strong>
+          <p>Keep this reference for check-in at the register.</p>
+          <button id="another-button" type="button">Make another reservation</button>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script>window.csrf_token = '{{ frappe.session.csrf_token }}';</script>
+  <script src="/assets/table_remote_till/js/reservations.js" defer></script>
+</body>
+</html>

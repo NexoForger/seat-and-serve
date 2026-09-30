@@ -1,7 +1,7 @@
 [project]
 name = "table_remote_till"
 authors = [
-    { name = "Table Remote Till", email = "dev@example.invalid"}
+    { name = "S&S (Seat & Serve)", email = "dev@example.invalid"}
 ]
 description = "Multichannel POS and ERP operations"
 requires-python = ">=3.14"

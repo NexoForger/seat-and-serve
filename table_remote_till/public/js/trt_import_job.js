@@ -1,6 +1,6 @@
 frappe.ui.form.on('TRT Import Job', {
   refresh(frm) {
-    frm.set_intro(__('1. Attach a private CSV/XLSX export. 2. Map column names in Mapping JSON. 3. Preview and resolve errors. 4. Import supported master records. Historical exports are staged for reconciliation; transaction import is not yet available.'));
+    frm.set_intro(__('1. Attach a private CSV/XLSX export. 2. Map column names in Mapping JSON. 3. For item prices, choose a target selling Price List. 4. Preview and resolve errors. 5. Import supported master records. BIM POS exports require mapping review; historical transaction import is not yet available.'));
     if (frm.is_new()) return;
     frm.add_custom_button(__('Suggest columns'), async () => {
       const result = await frappe.call({ method: 'table_remote_till.migration.suggest_mapping',

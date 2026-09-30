@@ -34,7 +34,7 @@ def main():
     if args.db_host:
         command.extend(["--db-host", args.db_host])
     if args.dry_run:
-        print("Will create one site and database and install ERPNext, HRMS, and Table Remote Till:")
+        print("Will create one site and database and install ERPNext, HRMS, and S&S (Seat & Serve):")
         print(" ".join(command))
         return
     command.extend(["--db-root-password", root_password,

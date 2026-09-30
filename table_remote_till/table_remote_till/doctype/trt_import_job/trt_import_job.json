@@ -4,10 +4,13 @@
  "module": "Table Remote Till",
  "engine": "InnoDB",
  "autoname": "hash",
+ "title_field": "source",
+ "show_title_field_in_link": 1,
  "istable": 0,
  "field_order": [
   "source",
   "record_type",
+  "target_price_list",
   "status",
   "source_file",
   "mapping_json",
@@ -21,7 +24,7 @@
    "fieldname": "source",
    "fieldtype": "Select",
    "label": "Source",
-   "options": "Omega POS\nSquirrel Cloud\nSquirrel 11\nGeneric",
+   "options": "Omega POS\nBIM POS\nSquirrel Cloud\nSquirrel 11\nGeneric",
    "reqd": 1
   },
   {
@@ -30,6 +33,13 @@
    "label": "Record Type",
    "options": "Item\nCustomer\nSupplier\nSale\nReturn\nPayment\nPurchase\nStock\nJournal\nEmployee",
    "reqd": 1
+  },
+  {
+   "fieldname": "target_price_list",
+   "fieldtype": "Link",
+   "label": "Target Selling Price List",
+   "options": "Price List",
+   "description": "For Item imports with a selling price column. Prices are kept in the chosen ERPNext selling list."
   },
   {
    "fieldname": "status",

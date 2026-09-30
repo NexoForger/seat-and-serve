@@ -7,7 +7,7 @@ declare global {
 const base = '/api/method/table_remote_till.api.';
 
 async function request<T>(method: string, args: Record<string, unknown>, write = false): Promise<T> {
-  const url = base + method + (write ? '' : '?' + new URLSearchParams(
+  const url = (method.includes('.') ? '/api/method/table_remote_till.' + method : base + method) + (write ? '' : '?' + new URLSearchParams(
     Object.entries(args).filter(([, value]) => value != null).map(([key, value]) => [key, String(value)]),
   ));
   const csrf = window.csrf_token;
@@ -39,15 +39,58 @@ export const eventId = () => crypto.randomUUID();
 
 export type CatalogItem = {
   item: string; name_en: string; name_ar?: string; category?: string; rate: number; station?: string;
+  deal_kind?: 'Combo' | 'Offer'; deal_description?: string;
+  modifier_group?: ModifierGroup | null;
+};
+export type ModifierOption = { item: string; name_en: string; name_ar?: string; price_delta: number };
+export type ModifierGroup = { name: string; title: string; minimum: number; options: ModifierOption[] };
+export type GuestAppearance = {
+  brand_logo: string; primary_color: string; accent_color: string; page_color: string;
+  surface_color: string; text_color: string; muted_color: string; heading_font: string; body_font: string;
+  brand_title_en: string; brand_title_ar: string; brand_tagline_en: string; brand_tagline_ar: string;
+  hero_title_en: string; hero_title_ar: string;
+  hero_subtitle_en: string; hero_subtitle_ar: string; hero_image: string;
+  layout_style: 'Cards' | 'Compact list'; card_style: 'Soft' | 'Rounded' | 'Square';
+  loading_message_en: string; loading_message_ar: string;
+  loading_style: 'Food' | 'Sparkle' | 'Dots'; empty_style: 'Illustrated' | 'Simple';
+  success_style: 'Confetti' | 'Sparkle' | 'Check'; motion_style: 'Playful' | 'Calm' | 'Reduced';
 };
 export type Outlet = {
   name: string; title: string; base_currency: string; cash_currency?: string;
-  enable_tables: number; enable_tabs: number; enable_retail: number;
+  enable_tables: number; enable_tabs: number; enable_takeaway: number; enable_retail: number;
+  appearance?: GuestAppearance;
 };
 export type OrderLine = {
   name: string; item: string; item_name: string; qty: number; rate: number; amount: number; station?: string;
+  note?: string; modifiers?: ModifierOption[];
 };
 export type Order = {
-  name: string; outlet: string; channel: string; status: string; revision: number;
+  name: string; order_number: string; outlet: string; channel: string; table?: string; guest_count?: number; parent_order?: string; reservation?: string;
+  status: string; revision: number; bill?: BillSummary; customer?: string;
   currency: string; net_total: number; tax_total: number; grand_total: number; pos_invoice?: string; lines: OrderLine[];
+};
+export type BillSummary = {
+  ticket_count: number; root_revision: number; item_count: number; net_total: number; tax_total: number; grand_total: number;
+  amount_due: number; customer?: string; customer_name?: string; promotion?: string; discount_amount: number; discount_label?: string;
+  billing_errors?: string[];
+  manual_discount_type?: 'Percentage' | 'Amount'; manual_discount_value?: number; manual_discount_reason?: string;
+  loyalty: { program?: string; available_points: number; points: number; conversion_factor: number; amount: number };
+  order_numbers: string[]; pos_invoice?: string;
+  orders: { name: string; order_number: string; status: string; grand_total: number; pos_invoice?: string }[];
+};
+export type RegisterTableOrder = {
+  name: string; order_number: string; table: string; status: string; guest_count: number;
+  grand_total: number; line_count: number; parent_order?: string; runner_dispatched_at?: string;
+  expired_empty_addon?: boolean;
+  creation: string; modified: string;
+};
+export type RegisterTable = {
+  name: string; title: string; seats: number; area: string; area_title: string;
+  guest_count: number; orders: RegisterTableOrder[];
+  next_reservation?: { reservation_number: string; guest_name: string; party_size: number; time: string; status: string } | null;
+};
+export type Reservation = {
+  name: string; reservation_number: string; guest_name: string; phone?: string; email?: string;
+  party_size: number; starts_at: string; ends_at: string; time: string; status: string; source: string;
+  special_requests?: string; table: string; table_title: string; order?: string; order_number?: string;
 };

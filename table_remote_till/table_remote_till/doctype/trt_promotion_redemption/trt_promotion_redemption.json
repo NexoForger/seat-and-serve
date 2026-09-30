@@ -1,0 +1,15 @@
+{
+ "doctype": "DocType", "name": "TRT Promotion Redemption", "module": "Table Remote Till", "engine": "InnoDB", "autoname": "hash",
+ "field_order": ["promotion", "order", "pos_invoice", "customer", "redeemed_at"],
+ "fields": [
+  {"fieldname": "promotion", "fieldtype": "Link", "label": "Promotion", "options": "TRT Promotion", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "order", "fieldtype": "Link", "label": "Root Order", "options": "TRT Order", "reqd": 1, "unique": 1},
+  {"fieldname": "pos_invoice", "fieldtype": "Link", "label": "POS Invoice", "options": "POS Invoice", "reqd": 1},
+  {"fieldname": "customer", "fieldtype": "Link", "label": "Customer", "options": "Customer"},
+  {"fieldname": "redeemed_at", "fieldtype": "Datetime", "label": "Redeemed At", "reqd": 1}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "print": 1, "report": 1, "export": 1},
+  {"role": "TRT Manager", "read": 1, "print": 1, "report": 1, "export": 1}
+ ]
+}

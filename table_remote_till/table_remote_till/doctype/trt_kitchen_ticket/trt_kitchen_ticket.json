@@ -4,8 +4,11 @@
  "module": "Table Remote Till",
  "engine": "InnoDB",
  "autoname": "hash",
+ "title_field": "ticket_label",
+ "show_title_field_in_link": 1,
  "istable": 0,
  "field_order": [
+  "ticket_label",
   "order",
   "station",
   "status",
@@ -14,6 +17,13 @@
   "sent_at"
  ],
  "fields": [
+  {
+   "fieldname": "ticket_label",
+   "fieldtype": "Data",
+   "label": "Ticket",
+   "read_only": 1,
+   "in_list_view": 1
+  },
   {
    "fieldname": "order",
    "fieldtype": "Link",

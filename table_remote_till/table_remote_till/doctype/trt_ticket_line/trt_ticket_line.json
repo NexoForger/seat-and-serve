@@ -9,7 +9,8 @@
   "order_line",
   "item",
   "qty",
-  "note"
+  "note",
+  "status"
  ],
  "fields": [
   {
@@ -34,6 +35,14 @@
    "fieldname": "note",
    "fieldtype": "Small Text",
    "label": "Note"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Queued\nPreparing\nReady\nServed",
+   "default": "Queued",
+   "in_list_view": 1
   }
  ],
  "permissions": [],

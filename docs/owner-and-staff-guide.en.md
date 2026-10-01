@@ -62,7 +62,7 @@ Use a manager or System Manager account. Open `/onboarding`; the page checks tha
 4. Preview the proposed records. Read every warning and confirm names, currency, payment mode, and accounting links. The wizard creates/reuses operational masters in one idempotent run and records a `TRT Onboarding Run` audit entry.
 5. Enable LBP only if the company has approved its accounting and settlement policy. Add an approved `TRT FX Rate` with the effective time and approver before mixed tender. Never invent a rate at the till.
 6. Review POS Settings. Live checkout requires **POS Invoice** mode and an open POS Opening Entry for today. The existing development site was specifically found in Sales Invoice mode with an old open session and LBP disabled; it is not ready for live sales.
-7. Add real stock Items and selling Item Prices. Then prepare each sale item’s BOM/recipe, tax setup, and stock policy. Add approved Items to `TRT Menu`; imports alone do not make an Item appear on the Till.
+7. Add real stock Items and selling Item Prices. Prepare BOM/recipes for made-in-house items, plus tax setup and stock policy. Purchased stock Items sold as-is can be listed without a BOM. Add approved Items to `TRT Menu`; imports alone do not make an Item appear on the Till.
 8. Create `TRT Modifier Group` records and options only where the kitchen can fulfill them. Set minimum/maximum choices deliberately and price add-ons correctly.
 9. Create and enable `TRT Tables`, `TRT Service Areas`, and `TRT Kitchen Stations`; confirm every table and menu entry belongs to the correct outlet/station.
 10. Assign named users to the outlet. Do not issue public QR links until you test them from a guest phone and confirm they expose only the intended menu and table.
@@ -146,7 +146,7 @@ The import tool accepts private CSV/XLSX exports, supports UTF-8 or Windows-1256
 2. Choose the source and record type; use separate BIM POS exports per record type.
 3. Check suggested mappings against actual column headings. Preview missing fields, invalid rates, duplicates, counts, and source totals.
 4. Fix the source file/mapping, then import a small controlled batch. Verify created master records and prices before continuing.
-5. Reconcile totals and document who approved the migration. Imported products need recipes/BOMs and TRT menu entries separately.
+5. Reconcile totals and document who approved the migration. Imported products need TRT menu entries separately; made-in-house products also need recipes/BOMs.
 
 Historical Sale, Return, Payment, Purchase, Stock, Journal, and Employee exports can be inventoried and previewed only. Their transaction import and historical reconciliation are not implemented. Never claim the old sales ledger has been migrated because a preview succeeded.
 

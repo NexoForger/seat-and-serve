@@ -12,6 +12,14 @@ class TRTMenu(Document):
 			bom_names = frappe.get_all("BOM", filters={"item": row.item,
 				"company": company, "docstatus": 1, "is_active": 1}, pluck="name")
 			if not bom_names:
+				item = frappe.db.get_value("Item", row.item,
+					["is_stock_item", "is_purchase_item", "is_sales_item"], as_dict=True)
+				# Bought goods can be sold from stock without a manufacturing recipe.
+				# An existing draft or inactive BOM still needs approval before sale.
+				if (item and item.is_stock_item and item.is_purchase_item and
+						item.is_sales_item and not frappe.db.exists("BOM", {
+							"item": row.item, "company": company})):
+					continue
 				frappe.throw(f"{label} needs an active, submitted BOM for this outlet's company")
 			for bom_name in bom_names:
 				materials = frappe.get_all("BOM Item", filters={"parent": bom_name},

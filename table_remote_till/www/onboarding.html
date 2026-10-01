@@ -99,6 +99,15 @@ async function call(method,data={},post=false){
   return result.message}
 const api=(method,data={},post=false)=>call('table_remote_till.onboarding.'+method,data,post);
 const migrationApi=(method,data={},post=false)=>call('table_remote_till.migration.'+method,data,post);
+function newRequestId(){
+  const bytes=new Uint8Array(16);
+  if(!window.crypto?.getRandomValues)throw new Error('This browser cannot generate a secure request ID.');
+  window.crypto.getRandomValues(bytes);
+  bytes[6]=(bytes[6]&0x0f)|0x40;
+  bytes[8]=(bytes[8]&0x3f)|0x80;
+  const hex=Array.from(bytes,byte=>byte.toString(16).padStart(2,'0')).join('');
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+}
 function fill(id,values,first=''){const select=document.querySelector('#'+id);select.replaceChildren();if(first)select.add(new Option(first,''));for(const value of values)select.add(new Option(value,value))}
 function collect(){const data=new FormData(form);return {company:data.get('company'),business_type:data.get('business_type'),outlet_title:data.get('outlet_title'),branch:data.get('branch'),register_title:data.get('register_title'),warehouse:data.get('warehouse'),price_list:data.get('price_list'),customer:data.get('customer'),pos_profile:data.get('pos_profile'),cash_mode:data.get('cash_mode'),write_off_account:data.get('write_off_account'),cost_center:data.get('cost_center'),tax_template:data.get('tax_template'),channels:data.getAll('channel'),lbp_per_usd:data.get('lbp_per_usd'),approve_fx_rate:data.has('approve_fx_rate'),enable_lbp:data.has('enable_lbp'),set_pos_invoice_mode:data.has('set_pos_invoice_mode'),seed_sample_data:data.has('seed_sample_data')}}
 function invalidate(){previewConfig=null;requestId=null;applyButton.disabled=true;document.querySelector('#plan').hidden=true}
@@ -119,7 +128,7 @@ company.addEventListener('change',loadOptions);
 async function refresh(){try{const state=await api('status',{company:company.value});document.querySelector('#progress').textContent=`${state.ready_count} of ${state.total_count} readiness checks ready`;
   const list=document.querySelector('#checks');list.replaceChildren();for(const step of state.steps){const li=document.createElement('li'),a=document.createElement('a');a.href=step.route;a.textContent=step.label;const marker=document.createElement('strong');marker.className=step.ready?'done':'todo';marker.textContent=step.ready?'✓ ':'○ ';li.append(marker,a);list.append(li)}}catch(error){document.querySelector('#progress').textContent=error.message}}
 document.querySelector('#preview').addEventListener('click',async()=>{invalidate();if(!form.reportValidity())return;show('Checking setup…');try{
-  const data=collect(),plan=await api('preview_setup',{config:JSON.stringify(data)},true);previewConfig=JSON.stringify(data);requestId=crypto.randomUUID();applyButton.disabled=false;
+  const data=collect(),plan=await api('preview_setup',{config:JSON.stringify(data)},true);previewConfig=JSON.stringify(data);requestId=newRequestId();applyButton.disabled=false;
   const list=document.querySelector('#actions-list');list.replaceChildren();for(const row of plan.actions){const li=document.createElement('li');li.textContent=`${row.action}: ${row.label} — ${row.name}`;list.append(li)}
   const remaining=document.querySelector('#remaining-list');remaining.replaceChildren();for(const item of plan.remaining){const li=document.createElement('li');li.textContent=item;remaining.append(li)}
   document.querySelector('#plan').hidden=false;show('Preview ready. Review the changes, then apply.','success')}catch(error){show(error.message,'error')}});

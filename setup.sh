@@ -34,7 +34,11 @@ ask_yes() {
 }
 
 compose() {
-	docker compose -p "$project" \
+	local -a env_args=()
+	if [[ -f "$PROJECT_DIR/.env" ]]; then
+		env_args=(--env-file "$PROJECT_DIR/.env")
+	fi
+	docker compose "${env_args[@]}" -p "$project" \
 		-f "$PROJECT_DIR/devcontainer-example/docker-compose.yml" \
 		-f "$PROJECT_DIR/compose.local.yaml" "$@"
 }
@@ -58,6 +62,7 @@ done
 default_project="$(basename "$PROJECT_DIR" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')"
 
 printf '\nS&S (Seat & Serve) setup\n=======================\n'
+printf 'Use the same Docker Compose project name used to bootstrap this bench.\n'
 project="$(ask 'Docker Compose project' "$default_project")"
 site="$(ask 'Frappe site hostname' "$default_site")"
 if [[ ! "$project" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
@@ -112,7 +117,20 @@ fi
 compose up -d
 compose exec -T frappe test -f "$CONTAINER_APP/table_remote_till/hooks.py"
 if [[ "$mode" == new ]]; then
-	# provision_site.py refuses to overwrite an existing site and keeps passwords out of script output.
+	printf 'Waiting for MariaDB to finish starting...\n'
+	db_ready=0
+	for ((attempt = 0; attempt < 60; attempt++)); do
+		if compose exec -T mariadb healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1; then
+			db_ready=1
+			break
+		fi
+		sleep 2
+	done
+	if [[ "$db_ready" != 1 ]]; then
+		printf 'MariaDB did not become ready. Check Docker Compose logs for the mariadb service.\n' >&2
+		exit 1
+	fi
+	# provision_site.py refuses to overwrite an existing site and hides credentials on failure.
 	compose exec -T -w "$CONTAINER_APP" \
 		-e "TRT_DB_ROOT_PASSWORD=$db_password" \
 		-e "TRT_SITE_ADMIN_PASSWORD=$admin_password" \

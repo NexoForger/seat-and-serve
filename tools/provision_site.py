@@ -39,7 +39,9 @@ def main():
         return
     command.extend(["--db-root-password", root_password,
         "--admin-password", admin_password])
-    subprocess.run(command, cwd=BENCH, check=True)
+    result = subprocess.run(command, cwd=BENCH, check=False)
+    if result.returncode:
+        raise SystemExit(f"Site creation failed for {args.site}; see the bench error above.")
     print(f"Site {args.site} is ready. Complete ERPNext setup and visit /onboarding.")
 
 

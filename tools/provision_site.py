@@ -33,6 +33,9 @@ def main():
         "--install-app", "table_remote_till"]
     if args.db_host:
         command.extend(["--db-host", args.db_host])
+        # Container IPs can change between restarts; bind the site's database user
+        # to the Docker network rather than the container's current address.
+        command.extend(["--mariadb-user-host-login-scope", "%"])
     if args.dry_run:
         print("Will create one site and database and install ERPNext, HRMS, and S&S (Seat & Serve):")
         print(" ".join(command))

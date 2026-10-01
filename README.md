@@ -47,6 +47,8 @@ bench --site BUSINESS_SITE migrate
 
 `tools/provision_site.py BUSINESS_SITE` creates a separate site and installs all three apps. It reads `TRT_DB_ROOT_PASSWORD` and `TRT_SITE_ADMIN_PASSWORD` from the environment. Run `--dry-run` to inspect the command. Complete ERPNext Company/chart of accounts setup, then open the app workspace or `/onboarding`.
 
+If an existing Docker site's MariaDB login starts failing after a Frappe container is recreated, run `env/bin/python apps/table_remote_till/tools/repair_mariadb_site_user.py SITE` from the bench directory inside the Frappe container to inspect its database user. Rerun with `--apply` to grant that site's existing user access across the Docker network. The script prompts for the MariaDB root password and verifies the site login; it does not replace or drop the database.
+
 The guided onboarding page selects a company, outlet, branch, register, channels, cash mode, and accounting references. It previews every operation and applies them together: business setup, branch, warehouse, selling list, walk-in customer, POS Profile, outlet, register, manager assignment, starter menu, and restaurant floor/station. Optional explicit choices enable LBP, record an approved FX rate, and switch site-wide POS Settings to POS Invoice mode. Each run has a UUID idempotency key and a `TRT Onboarding Run` audit record. The **Seed sample data** checkbox adds clearly labeled items, item prices, menu entries, and a sample table; remove them before live use. Tax/payroll approvals, real items, shift opening, live payments, device certification, and historical reconciliation remain separate steps.
 
 ### Configure the business after installation

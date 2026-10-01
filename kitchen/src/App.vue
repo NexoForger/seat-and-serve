@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { eventId, get, post, type Outlet } from '../../ui/client';
 import '../../ui/styles.css';
 import '../../ui/theme.css';
@@ -37,6 +37,106 @@ const orderTypeLabel = (type: OrderType) => ({
   other: text('Other', 'أخرى'),
 })[type];
 const orders = computed(() => groupOrders(tickets.value));
+const unacknowledgedOrders = ref<string[]>([]);
+const soundPreferenceKey = 'trt.kds.sound-enabled';
+function readSoundPreference() {
+  try { return localStorage.getItem(soundPreferenceKey) === 'true'; }
+  catch { return false; }
+}
+const soundPreferred = ref(readSoundPreference());
+const soundReady = ref(false);
+const soundError = ref('');
+let audioContext: AudioContext | undefined;
+let alarmOscillator: OscillatorNode | undefined;
+let alarmGain: GainNode | undefined;
+let alarmTimer: ReturnType<typeof setInterval> | undefined;
+let activatingSound = false;
+
+function stopAlarm() {
+  if (alarmTimer) clearInterval(alarmTimer);
+  alarmTimer = undefined;
+  if (alarmGain && audioContext) alarmGain.gain.setValueAtTime(0, audioContext.currentTime);
+  alarmOscillator?.stop();
+  alarmOscillator?.disconnect();
+  alarmGain?.disconnect();
+  alarmOscillator = undefined;
+  alarmGain = undefined;
+}
+
+function startAlarm() {
+  if (alarmOscillator || !audioContext || audioContext.state !== 'running') return;
+  const context = audioContext;
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = 'square';
+  oscillator.frequency.value = 740;
+  gain.gain.setValueAtTime(0.001, context.currentTime);
+  gain.gain.linearRampToValueAtTime(0.35, context.currentTime + 0.03);
+  oscillator.connect(gain).connect(context.destination);
+  oscillator.start();
+  alarmOscillator = oscillator;
+  alarmGain = gain;
+  let high = false;
+  alarmTimer = setInterval(() => {
+    if (context.state !== 'running') return;
+    high = !high;
+    oscillator.frequency.setValueAtTime(high ? 1050 : 740, context.currentTime);
+  }, 350);
+}
+
+async function enableSound(test = true) {
+  if (activatingSound) return;
+  activatingSound = true;
+  soundPreferred.value = true;
+  try { localStorage.setItem(soundPreferenceKey, 'true'); }
+  catch { /* Audio can still work without storage. */ }
+  try {
+    if (!audioContext) {
+      audioContext = new AudioContext();
+      audioContext.onstatechange = () => { soundReady.value = audioContext?.state === 'running'; };
+    }
+    await audioContext.resume();
+    soundReady.value = audioContext.state === 'running';
+    if (!soundReady.value) throw new Error(text('Browser audio is blocked.', 'صوت المتصفح محظور.'));
+    soundError.value = '';
+    if (test && !unacknowledgedOrders.value.length) {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = 'square';
+      oscillator.frequency.value = 880;
+      gain.gain.value = 0.35;
+      oscillator.connect(gain).connect(audioContext.destination);
+      oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.5);
+    }
+  } catch (error) {
+    soundReady.value = false;
+    soundError.value = String(error);
+  } finally {
+    activatingSound = false;
+  }
+}
+
+function restoreSoundOnInteraction(event: Event) {
+  if (event.target instanceof Element && event.target.closest('.kds-sound button')) return;
+  if (soundPreferred.value && !soundReady.value) void enableSound(false);
+}
+
+function disableSound() {
+  soundPreferred.value = false;
+  soundReady.value = false;
+  soundError.value = '';
+  try { localStorage.removeItem(soundPreferenceKey); }
+  catch { /* The current screen can still be muted. */ }
+  stopAlarm();
+  if (audioContext) void audioContext.suspend();
+}
+
+watch([unacknowledgedOrders, soundReady], () => {
+  if (unacknowledgedOrders.value.length && soundReady.value) startAlarm();
+  else stopAlarm();
+});
 const types = computed(() => (['dine-in', 'to-go', 'kiosk', 'counter', 'other'] as OrderType[])
   .map(type => ({ type, count: orders.value.filter(card => card.type === type).length }))
   .filter(row => row.type !== 'other' || row.count > 0));
@@ -68,7 +168,12 @@ const elapsed = (card: OrderCard) => {
 async function refresh(clearMessage = true) {
   if (!outlet.value || busyOrder.value) return;
   try {
-    tickets.value = await get<Ticket[]>('kitchen_tickets', { outlet: outlet.value, status: 'All' });
+    const incoming = await get<Ticket[]>('kitchen_tickets', { outlet: outlet.value, status: 'All' });
+    tickets.value = incoming;
+    const active = groupOrders(incoming);
+    const pending = new Set(unacknowledgedOrders.value.filter(name => active.some(card => card.order === name)));
+    for (const card of active) if (hasQueued(card)) pending.add(card.order);
+    unacknowledgedOrders.value = [...pending];
     lastUpdated.value = new Date().toLocaleTimeString(
       rtl.value ? 'ar-LB' : 'en-US', { hour: '2-digit', minute: '2-digit' });
     if (clearMessage) message.value = '';
@@ -97,6 +202,7 @@ async function orderAction(card: OrderCard, action: 'start' | 'ready' | 'dispatc
   busyOrder.value = card.order;
   try {
     await post('kitchen_order_action', { order_name: card.order, action, event_id: eventId() });
+    if (action === 'start') unacknowledgedOrders.value = unacknowledgedOrders.value.filter(name => name !== card.order);
     busyOrder.value = '';
     await refresh();
     showSuccess(({ start: text('Order started.', 'بدأ تحضير الطلب.'), ready: text('Order ready.', 'الطلب جاهز.'), dispatch_runner: text('Runner called.', 'تم استدعاء النادل.'), served: text('Order served.', 'تم تقديم الطلب.') })[action]);
@@ -116,8 +222,21 @@ async function load() {
   refreshTimer = setInterval(() => { void refresh(); }, 5000);
   clockTimer = setInterval(() => { now.value = Date.now(); }, 1000);
 }
-onMounted(load);
+onMounted(() => {
+  window.addEventListener('pointerdown', restoreSoundOnInteraction);
+  window.addEventListener('touchstart', restoreSoundOnInteraction);
+  window.addEventListener('keydown', restoreSoundOnInteraction);
+  void load();
+});
 onUnmounted(() => {
+  window.removeEventListener('pointerdown', restoreSoundOnInteraction);
+  window.removeEventListener('touchstart', restoreSoundOnInteraction);
+  window.removeEventListener('keydown', restoreSoundOnInteraction);
+  stopAlarm();
+  if (audioContext) {
+    audioContext.onstatechange = null;
+    void audioContext.close();
+  }
   if (refreshTimer) clearInterval(refreshTimer);
   if (clockTimer) clearInterval(clockTimer);
   if (successTimer) clearTimeout(successTimer);
@@ -132,6 +251,7 @@ onUnmounted(() => {
         <div class="kds-intro-actions"><button class="kds-refresh" type="button" :disabled="!!busyOrder" @click="refresh()">{{ text('Refresh', 'تحديث') }}</button><div class="kds-live" :class="{ offline: !!message }"><span class="kds-live-dot" />{{ outletTitle }} <span class="kds-live-separator">·</span> {{ message ? text('Connection issue', 'مشكلة اتصال') : text('Live', 'مباشر') }}</div></div>
       </div>
       <div class="kds-summary"><div class="kds-total"><strong>{{ orders.length }}</strong><span>{{ text('active orders', 'طلبات نشطة') }}</span></div><div v-for="row in types" :key="row.type" class="kds-type-count" :class="row.type"><span class="kds-type-dot" /><strong>{{ row.count }}</strong><span>{{ orderTypeLabel(row.type) }}</span></div><small>{{ lastUpdated ? text('Updated', 'آخر تحديث') + ' ' + lastUpdated : text('Waiting for orders', 'بانتظار الطلبات') }}</small></div>
+      <div class="kds-sound" :class="{ 'has-orders': unacknowledgedOrders.length }" role="status" aria-live="polite"><strong>{{ unacknowledgedOrders.length ? text(`${unacknowledgedOrders.length} new order(s) waiting`, `${unacknowledgedOrders.length} طلبات جديدة بانتظار التحضير`) : text('Order alert', 'تنبيه الطلبات') }}</strong><span>{{ soundReady ? text('Sound on', 'الصوت مفعّل') : soundPreferred ? text('Sound remembered — tap to activate', 'الصوت محفوظ — المس الشاشة لتفعيله') : text('Sound off — enable it on this screen', 'الصوت متوقف — فعّله من هذه الشاشة') }}</span><button v-if="!soundReady" type="button" @click="enableSound()">{{ soundPreferred ? text('Activate sound', 'تفعيل الصوت') : text('Enable & test sound', 'تفعيل وتجربة الصوت') }}</button><button v-else type="button" @click="disableSound">{{ text('Turn sound off', 'إيقاف الصوت') }}</button><small v-if="soundError">{{ soundError }}</small></div>
       <Transition name="feedback"><Feedback v-if="message" class="kds-feedback" kind="error" :message="message" :language="language" /></Transition>
       <Transition name="feedback"><Feedback v-if="successMessage" class="kds-feedback" kind="success" :message="successMessage" :language="language" dismissible @dismiss="successMessage = ''" /></Transition>
       <Transition name="kds-board" mode="out-in">
@@ -143,7 +263,7 @@ onUnmounted(() => {
           <div class="kds-card-meta"><span class="kds-order-status">{{ orderStatus(card) }}<span v-if="card.runnerDispatchedAt" class="kds-runner-badge"> · {{ text('Runner called', 'تم استدعاء النادل') }}</span></span><span class="kds-age"><Icon name="clock" />{{ elapsed(card) }}</span></div>
           <div class="kds-card-lines"><section v-for="ticket in card.tickets" :key="ticket.name" class="kds-station-group"><h2>{{ ticket.station_title || text('Kitchen', 'المطبخ') }}</h2><div v-for="line in ticket.lines" :key="line.name" class="kds-line" :class="'status-' + line.status.toLowerCase()"><span class="kds-qty">{{ line.qty }}×</span><div class="kds-line-content"><strong>{{ line.item_name || text('Item', 'صنف') }}</strong><p v-if="line.note" class="kds-note">{{ line.note }}</p></div><select class="kds-line-status" :value="line.status" :disabled="!!busyOrder" :aria-label="text('Status for ', 'حالة ') + (line.item_name || line.item)" @change="changeLine(card, ticket, line.name, $event)"><option value="Queued">{{ text('Queued', 'جديد') }}</option><option value="Preparing">{{ text('Preparing', 'قيد التحضير') }}</option><option value="Ready">{{ text('Ready', 'جاهز') }}</option><option value="Served">{{ text('Served', 'تم التقديم') }}</option></select></div></section></div>
           <div class="kds-card-foot"><span>{{ totalItems(card) }} {{ text('items', 'أصناف') }}</span><span>{{ card.tickets.length }} {{ card.tickets.length === 1 ? text('station', 'محطة') : text('stations', 'محطات') }}</span></div>
-          <div class="kds-card-actions"><button v-if="hasQueued(card)" type="button" :disabled="!!busyOrder" @click="orderAction(card, 'start')">{{ text('Start all', 'بدء الكل') }}</button><button v-if="hasUnready(card)" type="button" :disabled="!!busyOrder" @click="orderAction(card, 'ready')">{{ text('Ready all', 'تجهيز الكل') }}</button><button v-if="allReady(card) && !card.runnerDispatchedAt" class="runner" type="button" :disabled="!!busyOrder" @click="orderAction(card, 'dispatch_runner')">{{ text('Dispatch runner', 'استدعاء النادل') }}</button><button v-if="allReady(card)" class="served" type="button" :disabled="!!busyOrder" @click="orderAction(card, 'served')">{{ text('Mark served', 'تم التقديم') }}</button></div>
+          <div class="kds-card-actions"><button v-if="hasQueued(card) || unacknowledgedOrders.includes(card.order)" type="button" :disabled="!!busyOrder" @click="orderAction(card, 'start')">{{ text('Start all', 'بدء الكل') }}</button><button v-if="hasUnready(card)" type="button" :disabled="!!busyOrder" @click="orderAction(card, 'ready')">{{ text('Ready all', 'تجهيز الكل') }}</button><button v-if="allReady(card) && !card.runnerDispatchedAt" class="runner" type="button" :disabled="!!busyOrder" @click="orderAction(card, 'dispatch_runner')">{{ text('Dispatch runner', 'استدعاء النادل') }}</button><button v-if="allReady(card)" class="served" type="button" :disabled="!!busyOrder" @click="orderAction(card, 'served')">{{ text('Mark served', 'تم التقديم') }}</button></div>
         </article>
         </TransitionGroup>
       </Transition>

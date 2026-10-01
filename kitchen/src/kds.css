@@ -19,6 +19,12 @@
 .kds-total { border-color: #e8f574; background: #e8f574; color: #171917; }
 .kds-summary strong { color: inherit; font-size: 14px; font-variant-numeric: tabular-nums; }
 .kds-summary small { margin-inline-start: auto; color: #aeb8a6; font-size: 11px; font-weight: 600; }
+.kds-sound { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-height: 38px; margin-bottom: 10px; padding: 6px 10px; border: 1px solid #55624b; border-radius: 7px; background: #30392b; color: #f5f7f1; font-size: 11px; }
+.kds-sound.has-orders { border-color: #f2a195; background: #503026; }
+.kds-sound strong { font-size: 12px; }
+.kds-sound span { color: #d8e1d1; }
+.kds-sound button { margin-inline-start: auto; min-height: 30px; padding: 4px 10px; border: 1px solid #e8f574; border-radius: 6px; color: #171917; background: #e8f574; font-size: 11px; font-weight: 800; cursor: pointer; }
+.kds-sound small { width: 100%; color: #ffd0c6; }
 .kds-type-dot { display: inline-block; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 2px; background: var(--type-color); }
 .kds-type-count.dine-in { --type-color: #56c3c3; }
 .kds-type-count.to-go { --type-color: #f2c04e; }

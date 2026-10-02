@@ -20,7 +20,7 @@ const notice = ref('');
 const noticeKind = ref<'success' | 'info' | 'warning' | 'error' | 'busy'>('info');
 const busy = ref(false);
 const options = ref<{ cash_modes: string[]; base_currency: string; fx_rate?: { lbp_per_usd: number };
-  opening_entry?: string; pos_invoice_mode: boolean } | null>(null);
+  opening_entry?: string; pos_invoice_mode: boolean; receipt_printer_available: boolean } | null>(null);
 const tenders = ref<{ mode_of_payment: string; currency: string; amount: number }[]>([]);
 const canManageDiscount = ref(false);
 const billCustomer = ref('');
@@ -490,8 +490,27 @@ async function checkout() {
     order.value = await post<Order>('cash_checkout', { order_name: order.value.name,
       tenders: chosen, event_id: eventId(), expected_revision: order.value.revision });
     setNotice(text(`Paid · POS Invoice ${order.value.pos_invoice}`, 'تم الدفع وتسجيل فاتورة نقطة البيع'), 'success');
+    if (options.value?.receipt_printer_available) {
+      try {
+        await post('print_receipt', { order_name: order.value.name });
+        setNotice(text(`Paid · Receipt printed · ${order.value.pos_invoice}`, 'تم الدفع وطباعة الإيصال'), 'success');
+      } catch (printError) {
+        setNotice(text(`Payment saved. Receipt did not print: ${String(printError)}`,
+          `تم حفظ الدفع. تعذرت طباعة الإيصال: ${String(printError)}`), 'warning');
+      }
+    }
     options.value = await get('checkout_options', { outlet: outlet.value });
     if (channel.value === 'Table') await loadTables();
+  } catch (error) { setNotice(String(error), 'error'); }
+  finally { busy.value = false; }
+}
+
+async function printReceipt() {
+  if (!order.value?.pos_invoice || busy.value) return;
+  busy.value = true;
+  try {
+    await post('print_receipt', { order_name: order.value.name, copy: true });
+    setNotice(text('Receipt printed.', 'تمت طباعة الإيصال.'), 'success');
   } catch (error) { setNotice(String(error), 'error'); }
   finally { busy.value = false; }
 }
@@ -605,7 +624,7 @@ onUnmounted(() => { if (tableRefreshTimer) clearInterval(tableRefreshTimer); });
           <div v-for="(tender, index) in tenders" :key="index" class="register-tender"><select v-model="tender.mode_of_payment" :aria-label="text('Payment method', 'وسيلة الدفع')"><option v-for="mode in options?.cash_modes || []" :key="mode">{{ mode }}</option></select><select v-model="tender.currency" :aria-label="text('Currency', 'العملة')"><option>{{ order?.currency || 'USD' }}</option><option v-if="order?.currency !== 'LBP'">LBP</option><option v-else>USD</option></select><input v-model.number="tender.amount" type="number" min="0" step="any" :aria-label="text('Tender amount', 'قيمة الدفع')" /><button type="button" :aria-label="text('Remove payment', 'إزالة الدفعة')" @click="tenders.splice(index, 1)">×</button></div>
           <button class="register-add-tender" type="button" @click="addTender">+ {{ text('Add payment amount', 'إضافة مبلغ دفع') }}</button><p v-if="options?.fx_rate">1 USD = {{ options.fx_rate.lbp_per_usd }} LBP</p><button class="register-confirm-payment" type="button" :disabled="busy || !options?.opening_entry || !options?.pos_invoice_mode || !options?.cash_modes.length" @click="checkout">{{ text('Confirm cash payment', 'تأكيد الدفع النقدي') }}</button>
         </div></Transition>
-        <p v-if="order?.pos_invoice" class="register-invoice">{{ text('Paid', 'تم الدفع') }} · {{ order.pos_invoice }}</p>
+        <p v-if="order?.pos_invoice" class="register-invoice">{{ text('Paid', 'تم الدفع') }} · {{ order.pos_invoice }} <button type="button" :disabled="busy" @click="printReceipt">{{ text('Reprint receipt', 'إعادة طباعة الإيصال') }}</button></p>
       </div>
     </aside>
 

@@ -18,6 +18,7 @@ from frappe.utils.password import get_encryption_key
 from table_remote_till.cleanup import EMPTY_ADDON_TTL, expire_empty_addon_drafts
 from table_remote_till.payments import configured_provider
 from table_remote_till.promotions import discount_for_bill, loyalty_for_bill
+from table_remote_till.receipt import configured_printer, print_invoice
 
 
 STAFF_ROLES = {"System Manager", "TRT Manager", "TRT Cashier"}
@@ -854,9 +855,24 @@ def checkout_options(outlet):
 		fields=["lbp_per_usd", "effective_date"], order_by="effective_date desc, modified desc", limit=1)
 	return {"cash_modes": modes, "base_currency": settings.base_currency,
 		"fx_rate": rate[0] if rate else None,
+		"receipt_printer_available": bool(frappe.db.exists("TRT Device", {"outlet": outlet,
+			"kind": "Receipt Printer", "enabled": 1})),
 		"opening_entry": frappe.db.get_value("POS Opening Entry", {"pos_profile": profile.name,
 			"status": "Open", "posting_date": frappe.utils.today()}, "name"),
 		"pos_invoice_mode": frappe.db.get_single_value("POS Settings", "invoice_type") == "POS Invoice"}
+
+
+@frappe.whitelist(methods=["POST"])
+def print_receipt(order_name, copy=False):
+	"""Print or reprint the invoice for a settled staff order."""
+	order = frappe.get_doc("TRT Order", order_name)
+	_staff_outlet(order.outlet)
+	if order.status != "Settled" or not order.pos_invoice:
+		frappe.throw("Pay the order before printing a receipt")
+	device = configured_printer(order.outlet, order.register)
+	if not device:
+		frappe.throw("Configure an enabled Receipt Printer in TRT Device for this outlet")
+	return print_invoice(order.pos_invoice, order.name, device, copy=frappe.utils.cint(copy) == 1)
 
 
 @frappe.whitelist()

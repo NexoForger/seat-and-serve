@@ -22,12 +22,25 @@ FONT_PATHS = (
 
 
 def configured_printer(outlet: str, register: str | None = None):
-	"""Prefer a register printer, then an outlet-wide printer."""
+	"""Prefer a register printer, then outlet-wide, then any outlet printer.
+
+	A Register value on TRT Device is a preference for multi-till floors, not a
+	hard filter. If the order is on another register (or none), still use an
+	enabled receipt printer for the outlet instead of failing the print.
+	"""
 	devices = frappe.get_all("TRT Device", filters={"outlet": outlet,
 		"kind": "Receipt Printer", "enabled": 1},
 		fields=["name", "title", "register", "driver", "address", "settings_json"], order_by="modified desc")
-	return next((row for row in devices if register and row.register == register), None) or next(
-		(row for row in devices if not row.register), None)
+	if not devices:
+		return None
+	if register:
+		for row in devices:
+			if row.register == register:
+				return row
+	for row in devices:
+		if not row.register:
+			return row
+	return devices[0]
 
 
 def _printer_target(device):

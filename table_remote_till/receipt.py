@@ -6,6 +6,7 @@ import ipaddress
 import json
 import re
 import socket
+from types import SimpleNamespace
 
 import frappe
 from PIL import Image, ImageDraw, ImageFont, features
@@ -214,13 +215,12 @@ def test_receipt(outlet_name, register):
 		frappe.throw("No enabled receipt printer is assigned to this register")
 	outlet = frappe.get_doc("TRT Outlet", outlet_name)
 	company = frappe.get_doc("Company", outlet.company)
-	invoice = frappe._dict({"name": "TEST-NO-SALE", "currency": outlet.base_currency or "USD",
-		"posting_date": frappe.utils.today(), "posting_time": frappe.utils.nowtime(),
-		"owner": "Test", "remarks": "", "customer_name": None,
-		"items": [frappe._dict({"item_name": "Printer setup check", "qty": 1,
-			"rate": 0, "amount": 0})], "total": 0, "discount_amount": 0,
-		"total_taxes_and_charges": 0, "taxes": [], "rounded_total": 0,
-		"grand_total": 0, "payments": []})
-	order = frappe._dict({"order_number": "TEST", "table": None})
+	invoice = SimpleNamespace(name="TEST-NO-SALE", currency=outlet.base_currency or "USD",
+		posting_date=frappe.utils.today(), posting_time=frappe.utils.nowtime(),
+		owner="Test", remarks="", customer_name=None,
+		items=[SimpleNamespace(item_name="Printer setup check", qty=1, rate=0, amount=0)],
+		total=0, discount_amount=0, total_taxes_and_charges=0, taxes=[],
+		rounded_total=0, grand_total=0, payments=[])
+	order = SimpleNamespace(order_number="TEST", table=None)
 	_send(device, render_receipt(invoice, order, outlet, company, test=True))
 	return {"printer": device.title or device.name, "test": True}

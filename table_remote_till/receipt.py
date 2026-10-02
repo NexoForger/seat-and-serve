@@ -62,9 +62,11 @@ def _money(value, currency):
 	return f"{flt(value):,.{precision}f} {currency}"
 
 
-def _receipt_rows(invoice, order, outlet, company, copy=False):
+def _receipt_rows(invoice, order, outlet, company, copy=False, test=False):
 	currency = invoice.currency
 	rows = [("center", _clean(company.company_name or company.name), "title")]
+	if test:
+		rows.append(("center", "TEST PRINT - NO SALE", "body"))
 	if copy:
 		rows.append(("center", "REPRINT", "body"))
 	if getattr(company, "receipt_header", None):
@@ -124,13 +126,13 @@ def _wrap(draw, text, font, max_width):
 	return lines
 
 
-def render_receipt(invoice, order, outlet, company, copy=False):
+def render_receipt(invoice, order, outlet, company, copy=False, test=False):
 	"""Render text as a bitmap so Arabic and mixed-script item names survive ESC/POS."""
 	fonts = {"title": _font(28), "body": _font(23), "small": _font(19)}
 	measure = ImageDraw.Draw(Image.new("1", (WIDTH, 1), 1))
 	operations = []
 	y = 16
-	for kind, value, style in _receipt_rows(invoice, order, outlet, company, copy):
+	for kind, value, style in _receipt_rows(invoice, order, outlet, company, copy, test):
 		font = fonts.get(style, fonts["body"])
 		line_height = int(font.size * 1.5)
 		if kind == "rule":
@@ -181,22 +183,44 @@ def escpos_bytes(image, cut=True):
 	return bytes(output)
 
 
-def print_invoice(invoice_name, order_name, device, copy=False):
+def _send(device, image):
 	host, port = _printer_target(device)
+	settings = json.loads(device.settings_json or "{}")
+	payload = escpos_bytes(image, cut=settings.get("auto_cut", True))
+	with socket.create_connection((host, port), timeout=5) as connection:
+		connection.settimeout(10)
+		connection.sendall(payload)
+
+
+def print_invoice(invoice_name, order_name, device, copy=False):
 	order = frappe.get_doc("TRT Order", order_name)
 	invoice = frappe.get_doc("POS Invoice", invoice_name)
 	if invoice.docstatus != 1 or invoice.is_return or order.pos_invoice != invoice.name:
 		frappe.throw("Only a submitted sale receipt can be printed")
 	outlet = frappe.get_doc("TRT Outlet", order.outlet)
 	company = frappe.get_doc("Company", outlet.company)
-	settings = json.loads(device.settings_json or "{}")
-	payload = escpos_bytes(render_receipt(invoice, order, outlet, company, copy),
-		cut=settings.get("auto_cut", True))
 	try:
-		with socket.create_connection((host, port), timeout=5) as connection:
-			connection.settimeout(10)
-			connection.sendall(payload)
+		_send(device, render_receipt(invoice, order, outlet, company, copy))
 	except OSError:
 		frappe.log_error("Receipt printer connection failed", "TRT receipt print")
 		frappe.throw("Receipt printer is unreachable. Payment is saved; check the printer and use Reprint receipt.")
 	return {"invoice": invoice.name, "printer": device.title or device.name}
+
+
+def test_receipt(outlet_name, register):
+	"""Print a marked setup slip with no order or accounting transaction."""
+	device = configured_printer(outlet_name, register)
+	if not device:
+		frappe.throw("No enabled receipt printer is assigned to this register")
+	outlet = frappe.get_doc("TRT Outlet", outlet_name)
+	company = frappe.get_doc("Company", outlet.company)
+	invoice = frappe._dict({"name": "TEST-NO-SALE", "currency": outlet.base_currency or "USD",
+		"posting_date": frappe.utils.today(), "posting_time": frappe.utils.nowtime(),
+		"owner": "Test", "remarks": "", "customer_name": None,
+		"items": [frappe._dict({"item_name": "Printer setup check", "qty": 1,
+			"rate": 0, "amount": 0})], "total": 0, "discount_amount": 0,
+		"total_taxes_and_charges": 0, "taxes": [], "rounded_total": 0,
+		"grand_total": 0, "payments": []})
+	order = frappe._dict({"order_number": "TEST", "table": None})
+	_send(device, render_receipt(invoice, order, outlet, company, test=True))
+	return {"printer": device.title or device.name, "test": True}

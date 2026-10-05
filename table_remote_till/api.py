@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import contextlib
 import hashlib
 import hmac
 import json
@@ -18,6 +19,7 @@ from frappe.utils.password import get_encryption_key
 from table_remote_till.cleanup import EMPTY_ADDON_TTL, expire_empty_addon_drafts
 from table_remote_till.payments import configured_provider
 from table_remote_till.promotions import discount_for_bill, loyalty_for_bill
+from table_remote_till.receipt import configured_printer, print_invoice
 
 
 STAFF_ROLES = {"System Manager", "TRT Manager", "TRT Cashier"}
@@ -61,6 +63,29 @@ def _staff_outlet(outlet, ability="allow_till"):
 		"TRT Staff Assignment", {"user": frappe.session.user, "outlet": outlet,
 			"enabled": 1, "allow_manager": 1}):
 		frappe.throw("You are not assigned to this outlet", frappe.PermissionError)
+
+
+@contextlib.contextmanager
+def _as_admin():
+	"""Elevate to Administrator without destroying the caller's live session.
+
+	``frappe.set_user`` overwrites ``session.sid`` with the username and replaces
+	``session.data`` (csrf token, expiry, …) with an empty dict. Frappe persists
+	that broken payload when the request ends, which logs the till out on the
+	next write. Snapshot the session, elevate, then put it back verbatim.
+	"""
+	actor = frappe.session.user
+	saved_sid = frappe.session.sid
+	saved_data = frappe.session.data
+	try:
+		frappe.set_user("Administrator")
+		frappe.session.sid = saved_sid
+		frappe.session.data.update(saved_data)
+		yield
+	finally:
+		frappe.set_user(actor)
+		frappe.session.sid = saved_sid
+		frappe.session.data = saved_data
 
 
 def _sign(value):
@@ -854,9 +879,24 @@ def checkout_options(outlet):
 		fields=["lbp_per_usd", "effective_date"], order_by="effective_date desc, modified desc", limit=1)
 	return {"cash_modes": modes, "base_currency": settings.base_currency,
 		"fx_rate": rate[0] if rate else None,
+		"receipt_printer_available": bool(frappe.db.exists("TRT Device", {"outlet": outlet,
+			"kind": "Receipt Printer", "enabled": 1})),
 		"opening_entry": frappe.db.get_value("POS Opening Entry", {"pos_profile": profile.name,
 			"status": "Open", "posting_date": frappe.utils.today()}, "name"),
 		"pos_invoice_mode": frappe.db.get_single_value("POS Settings", "invoice_type") == "POS Invoice"}
+
+
+@frappe.whitelist(methods=["POST"])
+def print_receipt(order_name, copy=False):
+	"""Print or reprint the invoice for a settled staff order."""
+	order = frappe.get_doc("TRT Order", order_name)
+	_staff_outlet(order.outlet)
+	if order.status != "Settled" or not order.pos_invoice:
+		frappe.throw("Pay the order before printing a receipt")
+	device = configured_printer(order.outlet, order.register)
+	if not device:
+		frappe.throw("Configure an enabled Receipt Printer in TRT Device for this outlet")
+	return print_invoice(order.pos_invoice, order.name, device, copy=frappe.utils.cint(copy) == 1)
 
 
 @frappe.whitelist()
@@ -1004,12 +1044,8 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 	# ERPNext's party detail loader checks Account permissions even for an exact,
 	# server-selected receivable account. Populate those internals with the trusted
 	# service identity, then restore the cashier before writing the invoice.
-	actor = frappe.session.user
-	try:
-		frappe.set_user("Administrator")
+	with _as_admin():
 		invoice.set_missing_values()
-	finally:
-		frappe.set_user(actor)
 	invoice.ignore_pricing_rule = 1
 	if outlet.tax_template and invoice.taxes_and_charges != outlet.tax_template:
 		invoice.taxes_and_charges = outlet.tax_template
@@ -1041,14 +1077,10 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 	# Loyalty is entered after POS defaults are loaded. Recalculate the paid total
 	# with both tender rows and ERPNext's loyalty credit before invoice validation.
 	invoice.calculate_taxes_and_totals()
-	actor = frappe.session.user
-	try:
-		frappe.set_user("Administrator")
+	with _as_admin():
 		invoice.insert(ignore_permissions=True)
 		invoice.flags.ignore_permissions = True
 		invoice.submit()
-	finally:
-		frappe.set_user(actor)
 	if bill["loyalty"]["points"]:
 		# ERPNext POS Invoice's before_save counts payment rows but excludes native
 		# loyalty credit, so native redemption fails full-payment validation. Apply
@@ -1124,17 +1156,13 @@ def return_order(order_name, event_id, expected_revision):
 	if source.docstatus != 1 or source.is_return:
 		frappe.throw("The source POS Invoice cannot be returned")
 	from erpnext.accounts.doctype.pos_invoice.pos_invoice import make_sales_return
-	actor = frappe.session.user
-	try:
-		# ERPNext validates the source, derives negative items/payments, and
-		# posts the stock and accounting reversal under the service identity.
-		frappe.set_user("Administrator")
+	# ERPNext validates the source, derives negative items/payments, and
+	# posts the stock and accounting reversal under the service identity.
+	with _as_admin():
 		return_doc = make_sales_return(source.name)
 		return_doc.remarks = f"S&S (Seat & Serve) full return for order {order.order_number}"
 		return_doc.insert(ignore_permissions=True)
 		return_doc.submit()
-	finally:
-		frappe.set_user(actor)
 	order.revision += 1
 	order.save(ignore_permissions=True)
 	result = {"order": order.name, "status": "Returned", "return_invoice": return_doc.name,

@@ -18,7 +18,7 @@ The installed package stays `table_remote_till`. Existing DocTypes, roles, API r
 
 The app installs and migrates on the existing local bench. The Desk workspace exposes parent app DocTypes; child DocTypes are edited inside their parent forms. Versioned records cover business setup, onboarding, outlets, registers, tables, reservations, menus, orders, kitchen tickets, payments, devices, FX rates, sync events, promotions, and import jobs. Staff and guest order commands are server priced, idempotent, and revision checked. Exact cash and mixed USD/LBP tender can create an ERPNext POS Invoice when the site has an open POS session, approved FX rate, stock, and payment modes. The SQLite gateway prototype accepts local staff commands and records cash for later manager reconciliation.
 
-This is **not ready for live sales**. Card/online provider capture, real device drivers, partial refunds, split bills, weighed items, modifier accounting, full historical transaction migration, offline cash settlement, multi-device gateway recovery certification, complete offline PWA behavior, Windows/macOS packaging, and branch-scoped Desk permissions remain to be implemented. A settled order can receive one full ERPNext POS Invoice return through the idempotent `return_order` command; partial line returns still need their own quantity and stock policy. The web manifests provide an installable shell, while offline commands currently require the separate gateway prototype. Sandbox capture charges no money and is available only when `developer_mode` and `allow_sandbox_payments` are both enabled. Do not enable sandbox payments on a live site.
+This is **not ready for live sales**. Card/online provider capture, most real device drivers, partial refunds, split bills, weighed items, modifier accounting, full historical transaction migration, offline cash settlement, multi-device gateway recovery certification, complete offline PWA behavior, Windows/macOS packaging, and branch-scoped Desk permissions remain to be implemented. A settled order can receive one full ERPNext POS Invoice return through the idempotent `return_order` command; partial line returns still need their own quantity and stock policy. The web manifests provide an installable shell, while offline commands currently require the separate gateway prototype. Sandbox capture charges no money and is available only when `developer_mode` and `allow_sandbox_payments` are both enabled. Do not enable sandbox payments on a live site.
 
 ## Install and build
 
@@ -119,6 +119,12 @@ For BIM POS, use a separate export for each record type. BIM POS product lines a
 ## Store gateway
 
 See [gateway/README.md](gateway/README.md). It uses HTTPS, a bearer token, and a durable SQLite event queue. It needs a dedicated Frappe API token, outlet ID, and certificates. It is a prototype: offline prices are provisional, cash is flagged for manager settlement, and real LAN/device certification is outstanding.
+
+## Ethernet receipt printer
+
+For each outlet or register, create an enabled **TRT Device** with Kind **Receipt Printer**, Driver `escpos_tcp`, and Address `PRINTER_IP:9100` (for example `192.168.123.100:9100`). Leave Register blank for an outlet-wide printer; a matching register printer takes priority. The optional Settings JSON can set `{"auto_cut": false}` when a printer has no cutter.
+
+The Frappe server must be able to reach that IP. For a printer cabled directly to a Raspberry Pi, give the Pi Ethernet interface a persistent address on the printer's subnet without replacing its Wi-Fi default route. A successful cash checkout in the Till sends the submitted POS Invoice to the configured printer. **Reprint receipt** repeats the print without creating another invoice or payment. The receipt includes the company and outlet, invoice and order numbers, date, items, discount, included tax, total, cash payments, and any Company receipt header/footer. Arabic item names render as bitmap text. The gateway's `/device/simulate` route remains a simulator and is not involved in this print path.
 
 ## Owner and staff documentation
 

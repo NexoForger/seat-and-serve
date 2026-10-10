@@ -78,7 +78,7 @@ export type OrderLine = {
 };
 export type Order = {
   name: string; order_number: string; outlet: string; channel: string; table?: string; guest_count?: number; parent_order?: string; reservation?: string;
-  status: string; revision: number; bill?: BillSummary; customer?: string;
+  tab_label?: string; status: string; revision: number; bill?: BillSummary; customer?: string;
   currency: string; net_total: number; tax_total: number; grand_total: number; pos_invoice?: string; lines: OrderLine[];
 };
 export type BillSummary = {

@@ -1,26 +1,94 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { eventId, get, post, type CatalogItem, type Order, type Outlet, type RegisterTable, type RegisterTableOrder, type Reservation } from '../../ui/client';
 import '../../ui/styles.css';
 import './register.css';
 import Icon from '../../ui/Icon.vue';
 import Feedback from '../../ui/Feedback.vue';
 import ModifierPicker from '../../ui/ModifierPicker.vue';
+import ItemManager from './ItemManager.vue';
 import { money } from '../../ui/format';
+
+const itemsPage = ref(window.location.hash === '#items');
+function syncPage() { itemsPage.value = window.location.hash === '#items'; showTools.value = false; }
+async function refreshCatalogItems() {
+  if (!outlet.value || !channel.value) return;
+  try {
+    const data = await get<{ items: CatalogItem[] }>('catalog', { outlet: outlet.value, channel: channel.value });
+    catalog.value = data.items;
+  } catch (error) { setNotice(String(error), 'error'); }
+}
 
 const outlets = ref<Outlet[]>([]);
 const outlet = ref('');
 const channel = ref('');
-const step = ref<'type' | 'tables' | 'reservations' | 'catalog'>('type');
+const step = ref<'type' | 'tables' | 'tabs' | 'reservations' | 'catalog'>('type');
 const catalog = ref<CatalogItem[]>([]);
 const order = ref<Order | null>(null);
 const search = ref('');
 const tabLabel = ref('');
+const openTabs = ref<Pick<Order, 'name' | 'order_number' | 'tab_label' | 'status' | 'grand_total' | 'currency'>[]>([]);
 const notice = ref('');
 const noticeKind = ref<'success' | 'info' | 'warning' | 'error' | 'busy'>('info');
 const busy = ref(false);
 const options = ref<{ cash_modes: string[]; base_currency: string; fx_rate?: { lbp_per_usd: number };
   opening_entry?: string; pos_invoice_mode: boolean; receipt_printer_available: boolean } | null>(null);
+type ShiftDetails = {
+  opening_entry?: string;
+  pending_closing?: { name: string; status: string };
+  currency: string;
+  rows: { mode_of_payment: string; expected_amount: number; amount: number | '' }[];
+};
+const shiftDialog = ref<HTMLDialogElement | null>(null);
+const shiftDetails = ref<ShiftDetails | null>(null);
+const shiftError = ref('');
+const shiftSaving = ref(false);
+
+async function refreshCheckoutOptions() {
+  if (outlet.value) options.value = await get('checkout_options', { outlet: outlet.value });
+}
+
+async function promptShift() {
+  if (busy.value || loading.value || !outlet.value) return;
+  busy.value = true; shiftError.value = ''; showTools.value = false;
+  try {
+    const details = await get<ShiftDetails>('shifts.shift_details', { outlet: outlet.value });
+    shiftDetails.value = { ...details, rows: details.rows.map(row => ({ ...row, amount: '' })) };
+    await refreshCheckoutOptions();
+    await nextTick();
+    shiftDialog.value?.showModal();
+  } catch (error) { setNotice(String(error), 'error'); }
+  finally { busy.value = false; }
+}
+
+async function saveShift() {
+  const details = shiftDetails.value;
+  if (!details || shiftSaving.value || details.pending_closing) return;
+  if (details.rows.some(row => row.amount === '' || !Number.isFinite(Number(row.amount)) || Number(row.amount) < 0)) {
+    shiftError.value = text('Enter a valid amount for every payment method.', 'أدخل مبلغاً صحيحاً لكل طريقة دفع.');
+    return;
+  }
+  shiftSaving.value = true; busy.value = true; shiftError.value = '';
+  try {
+    const result = await post<{ name: string; status: string }>(details.opening_entry ? 'shifts.close_shift' : 'shifts.open_shift', {
+      outlet: outlet.value, opening_entry: details.opening_entry,
+      amounts: Object.fromEntries(details.rows.map(row => [row.mode_of_payment, Number(row.amount)])),
+    });
+    if (result.status === 'Failed') {
+      shiftError.value = text('Closing failed during invoice processing. Review closing entry ', 'فشلت معالجة فواتير الإغلاق. راجع سجل الإغلاق ') + result.name;
+      details.pending_closing = result;
+    } else {
+      shiftDialog.value?.close();
+      setNotice(result.status === 'Queued'
+        ? text('Shift closing is processing. ', 'جارٍ معالجة إغلاق الوردية. ') + result.name
+        : details.opening_entry ? text('Shift closed. ', 'تم إغلاق الوردية. ') + result.name
+        : text('Shift opened. ', 'تم فتح الوردية. ') + result.name, 'success');
+    }
+    await refreshCheckoutOptions();
+  } catch (error) { shiftError.value = String(error); }
+  finally { shiftSaving.value = false; busy.value = false; }
+}
+
 const tenders = ref<{ mode_of_payment: string; currency: string; amount: number }[]>([]);
 const canManageDiscount = ref(false);
 const billCustomer = ref('');
@@ -129,6 +197,7 @@ async function load() {
     outlets.value = data.outlets;
     canManageDiscount.value = data.roles.some(role => role === 'System Manager' || role === 'TRT Manager');
     outlet.value ||= data.outlets[0]?.name || '';
+    await refreshCheckoutOptions();
     await loadTables();
     if (!outlet.value) setNotice(text('Configure an outlet in Frappe Desk to begin.', 'أضف فرعاً في فرابي للبدء.'), 'warning');
   } catch (error) { setNotice(String(error), 'error'); }
@@ -170,8 +239,55 @@ async function loadCatalog() {
     catalog.value = data.items;
     options.value = await get('checkout_options', { outlet: outlet.value });
     await loadTables();
+    if (channel.value === 'Tab') await loadTabs();
   } catch (error) { setNotice(String(error), 'error'); }
   finally { loading.value = false; }
+}
+
+async function loadTabs() {
+  openTabs.value = [];
+  if (!outlet.value) return;
+  try {
+    openTabs.value = await get<typeof openTabs.value>('register_tabs', { outlet: outlet.value });
+  } catch (error) { setNotice(String(error), 'error'); }
+}
+
+async function showTabs() {
+  if (busy.value || loading.value) return;
+  step.value = 'tabs';
+  order.value = null;
+  tenders.value = [];
+  showPayment.value = false;
+  busy.value = true;
+  notice.value = '';
+  try { await loadTabs(); }
+  finally { busy.value = false; }
+}
+
+async function openTab(name: string) {
+  if (busy.value || loading.value) return;
+  busy.value = true; notice.value = '';
+  try {
+    const saved = await get<Order>('register_order', { outlet: outlet.value, order_name: name });
+    if (saved.channel !== 'Tab' || !['Draft', 'Sent', 'Preparing', 'Ready', 'Served'].includes(saved.status)) {
+      await loadTabs();
+      throw new Error(text('This tab is no longer open.', 'هذا الحساب لم يعد مفتوحاً.'));
+    }
+    order.value = saved;
+    tabLabel.value = saved.tab_label || '';
+    tenders.value = [];
+    showPayment.value = false;
+    step.value = 'catalog';
+  } catch (error) { setNotice(String(error), 'error'); }
+  finally { busy.value = false; }
+}
+
+function startTab() {
+  order.value = null;
+  tabLabel.value = '';
+  tenders.value = [];
+  showPayment.value = false;
+  step.value = 'catalog';
 }
 
 async function openTableOrder(ticket: RegisterTableOrder) {
@@ -293,7 +409,8 @@ async function chooseType(value: string) {
   selectedTable.value = null;
   order.value = null;
   channel.value = value;
-  step.value = value === 'Table' ? 'tables' : 'catalog';
+  step.value = value === 'Table' ? 'tables' : value === 'Tab' ? 'tabs' : 'catalog';
+  tabLabel.value = '';
   notice.value = '';
   if (value === 'Table') await loadTables();
 }
@@ -535,6 +652,8 @@ watch(outlet, async (nextOutlet, previousOutlet) => {
   step.value = 'type';
   selectedTable.value = null;
   order.value = null;
+  options.value = null;
+  try { await refreshCheckoutOptions(); } catch (error) { setNotice(String(error), 'error'); }
   await loadTables();
 });
 watch(channel, async nextChannel => {
@@ -549,17 +668,36 @@ watch(channel, async nextChannel => {
 });
 let tableRefreshTimer: ReturnType<typeof setInterval> | undefined;
 onMounted(() => {
+  window.addEventListener('hashchange', syncPage);
   void load();
   tableRefreshTimer = setInterval(() => {
     if ((step.value === 'tables' || channel.value === 'Table') && !busy.value && !loading.value)
       void loadTables();
   }, 5000);
 });
-onUnmounted(() => { if (tableRefreshTimer) clearInterval(tableRefreshTimer); });
+onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tableRefreshTimer) clearInterval(tableRefreshTimer); });
 </script>
 
 <template>
-  <div class="register-shell" :class="{ 'register-shell-flow': step !== 'catalog' }" :dir="rtl ? 'rtl' : 'ltr'" :lang="language">
+  <ItemManager v-if="itemsPage && !loading && canManageDiscount && outlet" :outlet="outlet" :outlet-title="selectedOutlet?.title || outlet" :language="language" @saved="refreshCatalogItems" />
+  <div v-else-if="itemsPage" class="register-flow" style="padding: 32px"><a href="#">{{ text('Back to till', 'العودة للصندوق') }}</a><p>{{ loading ? text('Loading…', 'جارٍ التحميل…') : text('A manager account is required to add items.', 'تحتاج إلى حساب مدير لإضافة الأصناف.') }}</p><p v-if="notice">{{ notice }}</p></div>
+  <div v-show="!itemsPage" class="register-shell" :class="{ 'register-shell-flow': step !== 'catalog' }" :dir="rtl ? 'rtl' : 'ltr'" :lang="language">
+    <dialog ref="shiftDialog" class="register-shift-dialog" :dir="rtl ? 'rtl' : 'ltr'" aria-labelledby="shift-title" @cancel="shiftSaving && $event.preventDefault()">
+      <form v-if="shiftDetails" @submit.prevent="saveShift">
+        <h2 id="shift-title">{{ shiftDetails.opening_entry ? text('Close shift', 'إغلاق الوردية') : text('Open shift', 'فتح الوردية') }}</h2>
+        <p>{{ shiftDetails.opening_entry ? text('Count the money you have at the end of the shift.', 'عدّ المال الموجود لديك في نهاية الوردية.') : text('How much money are you starting with?', 'كم مبلغ المال الذي تبدأ به؟') }}</p>
+        <p>{{ text('Enter all amounts in', 'أدخل جميع المبالغ بعملة') }} <strong>{{ shiftDetails.currency }}</strong>.</p>
+        <p v-if="shiftDetails.pending_closing" role="status">{{ text('A closing entry already exists:', 'يوجد سجل إغلاق بالفعل:') }} <a :href="'/app/pos-closing-entry/' + encodeURIComponent(shiftDetails.pending_closing.name)">{{ shiftDetails.pending_closing.name }}</a> · {{ shiftDetails.pending_closing.status }}</p>
+        <label v-for="row in shiftDetails.rows" :key="row.mode_of_payment" class="register-shift-count">
+          <strong>{{ row.mode_of_payment }}</strong>
+          <span v-if="shiftDetails.opening_entry">{{ text('Expected', 'المتوقع') }}: {{ money(row.expected_amount, shiftDetails.currency, language) }}</span>
+          <input v-model="row.amount" type="number" inputmode="decimal" min="0" step="any" required :disabled="shiftSaving || !!shiftDetails.pending_closing" :placeholder="text('Counted amount', 'المبلغ المعدود')" />
+          <span v-if="shiftDetails.opening_entry && row.amount !== ''">{{ text('Difference', 'الفرق') }}: {{ money(Number(row.amount) - row.expected_amount, shiftDetails.currency, language) }}</span>
+        </label>
+        <p v-if="shiftError" role="alert" class="register-payment-warning">{{ shiftError }}</p>
+        <div class="register-shift-actions"><button type="button" :disabled="shiftSaving" @click="shiftDialog?.close()">{{ text('Cancel', 'إلغاء') }}</button><button type="submit" :disabled="shiftSaving || !!shiftDetails.pending_closing">{{ shiftSaving ? text('Saving…', 'جارٍ الحفظ…') : shiftDetails.opening_entry ? text('Confirm closing', 'تأكيد الإغلاق') : text('Confirm opening', 'تأكيد الفتح') }}</button></div>
+      </form>
+    </dialog>
     <header class="register-identity">
       <button class="register-menu-button" type="button" :aria-label="text('Open register menu', 'فتح قائمة الصندوق')" :aria-expanded="showTools" @click="showTools = !showTools">☰</button>
       <div class="register-name"><strong>S&S</strong><small>{{ text('Seat & Serve · Waiter register', 'سيت آند سيرف · صندوق النادل') }}</small></div>
@@ -567,9 +705,10 @@ onUnmounted(() => { if (tableRefreshTimer) clearInterval(tableRefreshTimer); });
       <Transition name="register-drop"><div v-if="showTools" class="register-tools">
         <a href="/kitchen">{{ text('Kitchen display', 'شاشة المطبخ') }}</a>
         <a href="/app">{{ text('Manager Desk', 'لوحة الإدارة') }}</a>
+        <a v-if="canManageDiscount" href="#items" @click="showTools = false">{{ text('Add items / Manage menu', 'إضافة أصناف / إدارة القائمة') }}</a>
         <button v-if="selectedOutlet?.enable_tables" type="button" @click="openReservations">{{ text('Reservations', 'الحجوزات') }}</button>
         <a v-if="selectedOutlet?.enable_tables" :href="'/reservations?outlet=' + encodeURIComponent(outlet)" target="_blank" rel="noopener">{{ text('Guest reservation page', 'صفحة حجز الضيوف') }}</a>
-        <a :href="options?.opening_entry ? '/app/pos-closing-entry' : '/app/pos-opening-entry'">{{ options?.opening_entry ? text('Close shift', 'إغلاق الوردية') : text('Open shift', 'فتح الوردية') }}</a>
+        <button type="button" :disabled="busy || loading || !outlet" @click="promptShift">{{ options?.opening_entry ? text('Close shift', 'إغلاق الوردية') : text('Open shift', 'فتح الوردية') }}</button>
         <button type="button" @click="language = rtl ? 'en' : 'ar'; showTools = false">{{ rtl ? 'English' : 'العربية' }}</button>
       </div></Transition>
     </header>
@@ -585,6 +724,7 @@ onUnmounted(() => { if (tableRefreshTimer) clearInterval(tableRefreshTimer); });
       <div class="register-order-status"><span class="register-led" />{{ order ? `${order.order_number || text('Order', 'طلب')} · ${order.status}` : text('Ready to order…', 'جاهز للطلب…') }}<span class="register-order-count">{{ itemCount }}</span></div>
       <div class="register-sale-context"><strong>{{ channelTitle ? text(channelTitle.en, channelTitle.ar) : '' }}</strong><button type="button" :disabled="busy || loading" @click="showTypes">{{ text('Change order type', 'تغيير نوع الطلب') }}</button></div>
       <div v-if="channel === 'Table'" class="register-table-context"><div class="register-table-context-head"><strong>{{ selectedTable?.title || text('No table selected', 'لم يتم اختيار طاولة') }}</strong><button type="button" :disabled="busy || loading" @click="step = 'tables'">{{ text('Change table', 'تغيير الطاولة') }}</button></div><span>{{ tableContextLabel }}</span><label><span>{{ text('People', 'الأشخاص') }}</span><input v-model.number="guestCount" type="number" min="1" :max="selectedTable?.seats || 99" :disabled="!!order?.lines.length" /></label><label v-if="selectedTableTickets.length" class="register-ticket-select"><span>{{ text('Open ticket', 'الطلب المفتوح') }}</span><select :value="order?.name || ''" :disabled="busy || loading" @change="chooseTicket"><option value="" disabled>{{ text('Select ticket', 'اختر طلباً') }}</option><option v-for="ticket in selectedTableTickets" :key="ticket.name" :value="ticket.name">{{ ticket.order_number }} · {{ ticket.status }} · {{ price(ticket.grand_total) }}</option></select></label></div>
+      <button v-if="channel === 'Tab'" type="button" :disabled="busy || loading" @click="showTabs">{{ text('Open tabs', 'الحسابات المفتوحة') }}</button>
       <label v-if="channel === 'Tab'" class="register-tab-name"><span>{{ text('Tab name', 'اسم الحساب') }}</span><input v-model="tabLabel" :disabled="!!order?.lines.length" :placeholder="text('Enter a name', 'أدخل اسماً')" /></label>
       <div class="register-lines">
         <Transition name="feedback"><Feedback v-if="busy" class="register-feedback" kind="busy" :message="text('Working on it…', 'جارٍ التنفيذ…')" :language="language" /><Feedback v-else-if="notice" class="register-feedback" :kind="noticeKind" :message="notice" :language="language" dismissible @dismiss="notice = ''" /></Transition>
@@ -619,7 +759,7 @@ onUnmounted(() => { if (tableRefreshTimer) clearInterval(tableRefreshTimer); });
             <p v-if="billSettingsDirty" class="register-payment-warning">{{ text('Apply changes before confirming payment.', 'طبّق التغييرات قبل تأكيد الدفع.') }}</p>
             <strong class="register-amount-due">{{ text('Amount due', 'المبلغ المستحق') }} · {{ price(billAmountDue) }}</strong>
           </div>
-          <p v-if="!options?.opening_entry" class="register-payment-warning">{{ text('Open today’s POS shift before checkout.', 'افتح وردية اليوم قبل الدفع.') }} <a href="/app/pos-opening-entry">{{ text('Open shift', 'فتح الوردية') }}</a></p>
+          <p v-if="!options?.opening_entry" class="register-payment-warning">{{ text('Open a POS shift before checkout.', 'افتح وردية اليوم قبل الدفع.') }} <button type="button" :disabled="busy || loading" @click="promptShift">{{ text('Open shift', 'فتح الوردية') }}</button></p>
           <p v-if="options && !options.pos_invoice_mode" class="register-payment-warning">{{ text('Set POS Settings to POS Invoice mode.', 'اضبط وضع فاتورة نقطة البيع.') }}</p>
           <div v-for="(tender, index) in tenders" :key="index" class="register-tender"><select v-model="tender.mode_of_payment" :aria-label="text('Payment method', 'وسيلة الدفع')"><option v-for="mode in options?.cash_modes || []" :key="mode">{{ mode }}</option></select><select v-model="tender.currency" :aria-label="text('Currency', 'العملة')"><option>{{ order?.currency || 'USD' }}</option><option v-if="order?.currency !== 'LBP'">LBP</option><option v-else>USD</option></select><input v-model.number="tender.amount" type="number" min="0" step="any" :aria-label="text('Tender amount', 'قيمة الدفع')" /><button type="button" :aria-label="text('Remove payment', 'إزالة الدفعة')" @click="tenders.splice(index, 1)">×</button></div>
           <button class="register-add-tender" type="button" @click="addTender">+ {{ text('Add payment amount', 'إضافة مبلغ دفع') }}</button><p v-if="options?.fx_rate">1 USD = {{ options.fx_rate.lbp_per_usd }} LBP</p><button class="register-confirm-payment" type="button" :disabled="busy || !options?.opening_entry || !options?.pos_invoice_mode || !options?.cash_modes.length" @click="checkout">{{ text('Confirm cash payment', 'تأكيد الدفع النقدي') }}</button>
@@ -636,6 +776,14 @@ onUnmounted(() => { if (tableRefreshTimer) clearInterval(tableRefreshTimer); });
         <Transition name="feedback"><Feedback v-if="notice" class="register-flow-feedback" :kind="noticeKind" :message="notice" :language="language" dismissible @dismiss="notice = ''" /></Transition>
         <div class="register-type-grid"><button v-for="sale in availableSaleTypes" :key="sale.value" type="button" class="register-type-card" :disabled="loading || busy" @click="chooseType(sale.value)"><span class="register-type-icon"><Icon :name="sale.icon" /></span><strong>{{ text(sale.en, sale.ar) }}</strong><small>{{ text(sale.detail, sale.detailAr) }}</small><Icon name="arrow" /></button></div>
         <button v-if="selectedOutlet?.enable_tables" class="register-reservation-entry" type="button" :disabled="loading || busy" @click="openReservations">{{ text('Reservations · Book or seat a guest', 'الحجوزات · احجز أو أجلس ضيفاً') }} →</button>
+      </section>
+      <section v-else-if="step === 'tabs'" class="register-flow register-table-flow" :aria-label="text('Open tabs', 'الحسابات المفتوحة')">
+        <button class="register-flow-back" type="button" :disabled="loading || busy" @click="showTypes">← {{ text('Order types', 'أنواع الطلبات') }}</button>
+        <div class="register-flow-heading"><div><h1>{{ text('Open tabs', 'الحسابات المفتوحة') }}</h1><p class="register-flow-copy">{{ text('Reopen a saved tab or start a new one.', 'استأنف حساباً محفوظاً أو ابدأ حساباً جديداً.') }}</p></div><div class="register-map-controls"><button type="button" :disabled="busy || loading" @click="showTabs">{{ text('Refresh', 'تحديث') }}</button><button type="button" :disabled="busy || loading" @click="startTab">{{ text('New tab', 'حساب جديد') }}</button></div></div>
+        <Feedback v-if="notice" :kind="noticeKind" :message="notice" :language="language" />
+        <Feedback v-if="loading || busy" kind="busy" :message="text('Loading tabs…', 'جارٍ تحميل الحسابات…')" :language="language" />
+        <Feedback v-else-if="!openTabs.length" kind="info" :message="text('No open tabs. Start a new tab to take an order.', 'لا توجد حسابات مفتوحة. ابدأ حساباً جديداً لتسجيل طلب.')" :language="language" />
+        <div class="register-table-grid"><button v-for="tab in openTabs" :key="tab.name" type="button" class="register-table-card occupied" :disabled="busy || loading" @click="openTab(tab.name)"><strong class="register-table-number">{{ tab.tab_label || tab.order_number }}</strong><span class="register-table-orders">{{ tab.order_number }} · {{ tab.status }}</span><span>{{ money(tab.grand_total, tab.currency, language) }}</span></button></div>
       </section>
       <section v-else-if="step === 'tables'" class="register-flow register-table-flow" :aria-label="text('Choose a table', 'اختر طاولة')">
         <button class="register-flow-back" type="button" :disabled="loading || busy" @click="showTypes">← {{ text('Order types', 'أنواع الطلبات') }}</button>
@@ -664,7 +812,7 @@ onUnmounted(() => { if (tableRefreshTimer) clearInterval(tableRefreshTimer); });
       <template v-else>
       <Transition name="register-panel"><label v-if="showSearch" class="register-search"><Icon name="search" /><input v-model="search" type="search" :placeholder="text('Search items…', 'ابحث عن الأصناف…')" :aria-label="text('Search items', 'ابحث عن الأصناف')" /></label></Transition>
       <div v-if="loading" class="register-catalog-empty">{{ text('Loading menu…', 'جارٍ تحميل القائمة…') }}</div>
-      <div v-else-if="!visibleItems.length" class="register-catalog-empty"><Icon :name="catalog.length ? 'search' : 'kitchen'" /><h1>{{ catalog.length ? text('No matching items', 'لا توجد أصناف مطابقة') : text('No menu items yet', 'لا توجد أصناف بعد') }}</h1><p>{{ catalog.length ? text('Try another category or search.', 'جرّب فئة أو بحثاً آخر.') : text('Add items to this outlet’s menu to start taking orders.', 'أضف أصنافاً إلى قائمة هذا الفرع لبدء استقبال الطلبات.') }}</p><button v-if="catalog.length" type="button" @click="category = ''; search = ''">{{ text('Show all items', 'عرض كل الأصناف') }}</button><a v-else href="/app/trt-menu">{{ text('Manage menu', 'إدارة القائمة') }}</a></div>
+      <div v-else-if="!visibleItems.length" class="register-catalog-empty"><Icon :name="catalog.length ? 'search' : 'kitchen'" /><h1>{{ catalog.length ? text('No matching items', 'لا توجد أصناف مطابقة') : text('No menu items yet', 'لا توجد أصناف بعد') }}</h1><p>{{ catalog.length ? text('Try another category or search.', 'جرّب فئة أو بحثاً آخر.') : text('Add items to this outlet’s menu to start taking orders.', 'أضف أصنافاً إلى قائمة هذا الفرع لبدء استقبال الطلبات.') }}</p><button v-if="catalog.length" type="button" @click="category = ''; search = ''">{{ text('Show all items', 'عرض كل الأصناف') }}</button><a v-else-if="canManageDiscount" href="#items">{{ text('Manage menu', 'إدارة القائمة') }}</a></div>
       <section v-for="group in itemGroups" v-else :key="group.name" class="register-group"><h2>{{ displayCategory(group.name) }}</h2><TransitionGroup name="register-item" tag="div" class="register-item-grid" :class="{ 'register-deal-grid': !!group.items[0]?.deal_kind }"><button v-for="item in group.items" :key="item.item" type="button" class="register-item" :class="[item.deal_kind ? 'register-deal-item' : 'tone-' + group.tone]" :disabled="busy || !editable" :title="`${rtl ? item.name_ar || item.name_en : item.name_en} · ${price(item.rate)}`" @click="choose(item)"><em v-if="item.deal_kind">{{ item.deal_kind === 'Combo' ? text('COMBO', 'وجبة') : text('OFFER', 'عرض') }}</em><span>{{ rtl ? item.name_ar || item.name_en : item.name_en }}</span><small v-if="item.deal_description" class="register-deal-description">{{ item.deal_description }}</small><small>{{ price(item.rate) }}</small></button></TransitionGroup></section>
       </template>
     </main>

@@ -509,6 +509,18 @@ def cleanup_empty_addon_drafts(outlet):
 
 
 @frappe.whitelist()
+def register_tabs(outlet):
+	"""List saved, unpaid tabs for an authorized outlet's register."""
+	_staff_outlet(outlet)
+	if not _outlet(outlet).enable_tabs:
+		return []
+	return frappe.get_all("TRT Order", filters={"outlet": outlet, "channel": "Tab",
+		"status": ["in", OPEN_ORDER_STATUSES]},
+		fields=["name", "order_number", "tab_label", "status", "grand_total", "currency"],
+		order_by="modified desc")
+
+
+@frappe.whitelist()
 def register_order(outlet, order_name):
 	"""Load a saved ticket for a waiter returning to its table."""
 	_staff_outlet(outlet)
@@ -869,6 +881,8 @@ def configure_bill(order_name, config, event_id, expected_revision):
 
 @frappe.whitelist()
 def checkout_options(outlet):
+	from table_remote_till.shifts import active_opening
+
 	_staff_outlet(outlet)
 	settings = _outlet(outlet)
 	profile = frappe.get_cached_doc("POS Profile", settings.pos_profile)
@@ -881,8 +895,7 @@ def checkout_options(outlet):
 		"fx_rate": rate[0] if rate else None,
 		"receipt_printer_available": bool(frappe.db.exists("TRT Device", {"outlet": outlet,
 			"kind": "Receipt Printer", "enabled": 1})),
-		"opening_entry": frappe.db.get_value("POS Opening Entry", {"pos_profile": profile.name,
-			"status": "Open", "posting_date": frappe.utils.today()}, "name"),
+		"opening_entry": active_opening(profile.name),
 		"pos_invoice_mode": frappe.db.get_single_value("POS Settings", "invoice_type") == "POS Invoice"}
 
 
@@ -973,10 +986,14 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 		frappe.throw("POS Profile company does not match outlet")
 	if frappe.db.get_single_value("POS Settings", "invoice_type") != "POS Invoice":
 		frappe.throw("Set ERPNext POS Settings invoice type to POS Invoice before checkout")
-	opening = frappe.db.get_value("POS Opening Entry", {"pos_profile": profile.name,
-		"status": "Open", "posting_date": frappe.utils.today()}, "name")
+	from table_remote_till.shifts import active_opening
+
+	frappe.db.sql("SELECT name FROM `tabPOS Profile` WHERE name=%s FOR UPDATE", profile.name)
+	opening = active_opening(profile.name)
 	if not opening:
-		frappe.throw("Open today's POS Opening Entry before checkout")
+		frappe.throw("Open a POS shift before checkout")
+	if frappe.db.exists("POS Closing Entry", {"pos_opening_entry": opening, "docstatus": 1}):
+		frappe.throw("This shift is closing. Finish closing it before checkout")
 	base = order.currency
 	fx = None
 	if any(row.get("currency") != base for row in tenders):
@@ -1077,8 +1094,12 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 	# Loyalty is entered after POS defaults are loaded. Recalculate the paid total
 	# with both tender rows and ERPNext's loyalty credit before invoice validation.
 	invoice.calculate_taxes_and_totals()
+	# ERPNext closing selects invoices by the opening cashier.
+	shift_cashier = frappe.db.get_value("POS Opening Entry", opening, "user")
 	with _as_admin():
 		invoice.insert(ignore_permissions=True)
+		invoice.owner = shift_cashier
+		invoice.db_set("owner", shift_cashier)
 		invoice.flags.ignore_permissions = True
 		invoice.submit()
 	if bill["loyalty"]["points"]:

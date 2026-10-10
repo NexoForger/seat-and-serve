@@ -666,3 +666,27 @@ def isolation_marker():
 		"title": "TRT fresh-site isolation marker"}).insert(ignore_permissions=True)
 	frappe.db.commit()
 	return marker.name
+
+
+def quick_item_run():
+	"""Create a complete till item in a rolled-back site transaction."""
+	from table_remote_till.items import create_item, item_options
+
+	frappe.set_user("Administrator")
+	try:
+		outlet = frappe.db.get_value("TRT Outlet", {"enabled": 1}, "name")
+		assert outlet, "Configure an outlet before running this smoke check"
+		options = item_options(outlet)
+		assert options["groups"] and options["uoms"] and options["ingredients"], "Configure sale units and raw materials"
+		request_id = str(uuid.uuid4())
+		details = {"name": "Temporary till item", "price": 7,
+			"group": options["groups"][0], "uom": options["uoms"][0],
+			"menu": options["menus"][0]["name"] if options["menus"] else "",
+			"ingredients": [{"item": options["ingredients"][0]["name"], "qty": 1}]}
+		result = create_item(outlet, details, request_id)
+		assert create_item(outlet, details, request_id) == result
+		assert any(row["item"] == result["item"] for row in api.catalog(outlet, "Till")["items"])
+		assert frappe.db.exists("BOM", {"item": result["item"], "company": frappe.db.get_value("TRT Outlet", outlet, "company"), "docstatus": 1})
+		return {"item": result["item"], "on_till": True, "retry_safe": True}
+	finally:
+		frappe.db.rollback()

@@ -306,3 +306,13 @@
 @media (prefers-reduced-motion: reduce) {
   .register-shell * { scroll-behavior: auto; }
 }
+
+.register-shift-dialog { width: min(440px, calc(100vw - 32px)); max-height: 85vh; overflow: auto; border: 1px solid #d6d9cf; border-radius: 20px; padding: 24px; color: #171917; background: #f7f8f3; box-shadow: 0 24px 80px #0003; }
+.register-shift-dialog::backdrop { background: #17191799; }
+.register-shift-dialog h2 { margin-top: 0; }
+.register-shift-count { display: grid; gap: 8px; margin: 20px 0; }
+.register-shift-count input { min-height: 44px; border: 1px solid #a9afa0; border-radius: 8px; padding: 10px; font: inherit; }
+.register-shift-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+.register-shift-actions button { padding: 12px 18px; border: 1px solid #a9afa0; border-radius: 10px; font: inherit; cursor: pointer; }
+.register-shift-actions button[type=submit] { background: #e8f574; }
+.register-shift-dialog button:disabled { opacity: .5; cursor: wait; }

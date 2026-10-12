@@ -11,8 +11,8 @@ class TRTMenu(Document):
 			label = frappe.db.get_value("Item", row.item, "item_name") or row.item
 			bom_names = frappe.get_all("BOM", filters={"item": row.item,
 				"company": company, "docstatus": 1, "is_active": 1}, pluck="name")
-			if not bom_names:
-				frappe.throw(f"{label} needs an active, submitted BOM for this outlet's company")
+			# Most menu items are sold without recipe-level stock depletion. Validate
+			# an attached recipe when present, but do not make recipes mandatory.
 			for bom_name in bom_names:
 				materials = frappe.get_all("BOM Item", filters={"parent": bom_name},
 					pluck="item_code")

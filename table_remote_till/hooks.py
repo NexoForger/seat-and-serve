@@ -141,13 +141,14 @@ after_migrate = "table_remote_till.install.after_migrate"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+from table_remote_till.desk_permissions import SCOPED
+
+permission_query_conditions = {
+	doctype: "table_remote_till.desk_permissions.query_conditions" for doctype in SCOPED
+}
+has_permission = {
+	doctype: "table_remote_till.desk_permissions.has_permission" for doctype in SCOPED
+}
 
 # Document Events
 # ---------------

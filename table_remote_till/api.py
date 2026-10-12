@@ -12,6 +12,7 @@ import re
 import secrets
 import time
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 import frappe
 from frappe.utils import flt, get_datetime, now_datetime
@@ -30,7 +31,7 @@ ORDER_FIELDS = [
 	"promotion", "manual_discount_type", "manual_discount_value", "manual_discount_reason", "loyalty_points_to_redeem", "loyalty_amount_redeemed",
 ]
 OPEN_ORDER_STATUSES = ("Draft", "Sent", "Preparing", "Ready", "Served")
-BILL_ORDER_STATUSES = OPEN_ORDER_STATUSES + ("Settled",)
+BILL_ORDER_STATUSES = OPEN_ORDER_STATUSES + ("Settled", "Partially Returned", "Returned")
 GUEST_APPEARANCE_DEFAULTS = {
 	"brand_logo": "", "primary_color": "#171917", "accent_color": "#e8f574",
 	"page_color": "#f7f8f3", "surface_color": "#ffffff", "text_color": "#171917",
@@ -62,6 +63,8 @@ def _staff_outlet(outlet, ability="allow_till"):
 		"outlet": outlet, "enabled": 1, ability: 1}) and not frappe.db.exists(
 		"TRT Staff Assignment", {"user": frappe.session.user, "outlet": outlet,
 			"enabled": 1, "allow_manager": 1}):
+		from table_remote_till.desk_permissions import audit_denial
+		audit_denial(frappe.session.user, "TRT Outlet", outlet, ability)
 		frappe.throw("You are not assigned to this outlet", frappe.PermissionError)
 
 
@@ -228,11 +231,31 @@ def _modifier_choices(entry, requested):
 	selected = []
 	for code in requested:
 		row = options[code]
-		if frappe.db.get_value("Item", code, "disabled"):
+		item = frappe.db.get_value("Item", code, ["disabled", "is_sales_item"], as_dict=True)
+		if not item or item.disabled or not item.is_sales_item:
 			frappe.throw("Modifier is unavailable")
 		selected.append({"item": code, "name_en": row.name_en or frappe.db.get_value("Item", code, "item_name"),
 			"name_ar": row.name_ar, "price_delta": flt(row.price_delta)})
 	return selected
+
+
+def _sale_quantity(item_code, value, allow_zero=False):
+	"""Accept three-place weighed quantities only when ERPNext's UOM allows them."""
+	try:
+		qty = Decimal(str(value))
+	except (InvalidOperation, TypeError):
+		frappe.throw("Quantity must be a number")
+	if not qty.is_finite() or qty < 0 or (qty == 0 and not allow_zero) or qty > 1000:
+		frappe.throw("Quantity must be positive and no more than 1000")
+	if qty.as_tuple().exponent < -3:
+		frappe.throw("Weighed quantity supports up to three decimal places")
+	uom = frappe.db.get_value("Item", item_code, "stock_uom")
+	if not uom:
+		frappe.throw("Item needs a stock UOM")
+	weighed = not bool(frappe.db.get_value("UOM", uom, "must_be_whole_number"))
+	if not weighed and qty != qty.to_integral_value():
+		frappe.throw("This item requires a whole-number quantity")
+	return float(qty), uom, weighed
 
 
 def _snapshot(order):
@@ -241,6 +264,7 @@ def _snapshot(order):
 		{
 			"name": line.name, "item": line.item, "item_name": line.item_name,
 			"qty": line.qty, "rate": line.rate, "amount": line.amount,
+			"uom": line.uom, "weighed": bool(line.weighed),
 			"station": line.station, "note": line.note,
 			"modifiers": frappe.parse_json(line.modifiers_json) if line.modifiers_json else [],
 		}
@@ -308,7 +332,7 @@ def _bill_snapshot(order):
 		"points": int(root.loyalty_points_to_redeem or 0), "amount": 0, "conversion_factor": 0}
 	billing_errors = []
 	invoice_names = {ticket.pos_invoice for ticket in orders if ticket.pos_invoice}
-	if lines and all(ticket.status in ("Settled", "Returned") for ticket in orders) and len(invoice_names) == 1:
+	if lines and all(ticket.status in ("Settled", "Partially Returned", "Returned") for ticket in orders) and len(invoice_names) == 1:
 		# Paid bills retain the submitted invoice amounts if tax or promotion settings change.
 		invoice = frappe.db.get_value("POS Invoice", next(iter(invoice_names)),
 			["net_total", "total_taxes_and_charges", "rounded_total", "grand_total",
@@ -369,6 +393,27 @@ def _use_tax_inclusive_prices(invoice):
 		tax.included_in_print_rate = 1
 
 
+def _append_priced_items(invoice, lines, warehouse):
+	"""Represent modifiers as ERPNext Items for their own tax, stock, and GL accounts."""
+	priced = []
+	for line in lines:
+		modifiers = frappe.parse_json(line.modifiers_json) if line.modifiers_json else []
+		base_rate = flt(line.rate) - sum(flt(option["price_delta"]) for option in modifiers)
+		if base_rate < 0:
+			frappe.throw("Modifier total exceeds the parent item price")
+		base = invoice.append("items", {"item_code": line.item, "item_name": line.item_name,
+			"qty": line.qty, "rate": base_rate, "warehouse": warehouse})
+		priced.append((base, base_rate))
+		for option in modifiers:
+			if not frappe.db.exists("Item", option["item"]):
+				frappe.throw("Modifier item is unavailable")
+			modifier = invoice.append("items", {"item_code": option["item"],
+				"item_name": option.get("name_en") or option["item"], "qty": line.qty,
+				"rate": flt(option["price_delta"]), "warehouse": warehouse})
+			priced.append((modifier, flt(option["price_delta"])))
+	return priced
+
+
 def _reprice(order, outlet, discount_amount=0):
 	"""Use ERPNext's POS calculator without adding tax on top of item prices."""
 	if not order.lines:
@@ -391,15 +436,13 @@ def _reprice(order, outlet, discount_amount=0):
 	invoice.taxes_and_charges = outlet.tax_template or frappe.db.get_value(
 		"POS Profile", outlet.pos_profile, "taxes_and_charges")
 	invoice.set_warehouse = outlet.warehouse
-	for line in order.lines:
-		invoice.append("items", {"item_code": line.item, "item_name": line.item_name,
-			"qty": line.qty, "rate": line.rate, "warehouse": outlet.warehouse})
+	priced = _append_priced_items(invoice, order.lines, outlet.warehouse)
 	invoice.set_taxes()
 	_use_tax_inclusive_prices(invoice)
 	invoice.ignore_pricing_rule = 1
-	for item, line in zip(invoice.items, order.lines, strict=True):
-		item.rate = line.rate
-		item.price_list_rate = line.rate
+	for item, rate in priced:
+		item.rate = rate
+		item.price_list_rate = rate
 	invoice.calculate_taxes_and_totals()
 	if discount_amount:
 		invoice.apply_discount_on = "Grand Total"
@@ -586,6 +629,8 @@ def catalog(outlet, channel="Till"):
 				"item": row.item, "name_en": row.name_en or name,
 				"name_ar": row.name_ar, "category": row.category,
 				"rate": flt(row.price_override) if flt(row.price_override) > 0 else rate,
+				"uom": frappe.db.get_value("Item", row.item, "stock_uom"),
+				"weighed": not bool(frappe.db.get_value("UOM", frappe.db.get_value("Item", row.item, "stock_uom"), "must_be_whole_number")),
 				"station": row.station, "modifier_group": modifier,
 				"deal_kind": row.deal_kind, "deal_description": row.deal_description,
 			})
@@ -600,8 +645,10 @@ def catalog(outlet, channel="Till"):
 				name, rate = _price(price.item_code, settings.price_list)
 			except frappe.ValidationError:
 				continue
+			uom = frappe.db.get_value("Item", price.item_code, "stock_uom")
 			items.append({"item": price.item_code, "name_en": name,
-				"name_ar": "", "category": "Retail", "rate": rate, "station": None})
+				"name_ar": "", "category": "Retail", "rate": rate, "station": None,
+				"uom": uom, "weighed": not bool(frappe.db.get_value("UOM", uom, "must_be_whole_number"))})
 	return {"outlet": outlet, "currency": settings.base_currency, "items": items}
 
 
@@ -746,9 +793,7 @@ def order_command(command, event_id, order_name=None, expected_revision=None, gu
 		outlet = _outlet(order.outlet)
 		if action == "add_line":
 			item_code = command.get("item")
-			qty = flt(command.get("qty", 1))
-			if qty <= 0:
-				frappe.throw("Quantity must be positive")
+			qty, uom, weighed = _sale_quantity(item_code, command.get("qty", 1))
 			entry = _menu_entry(outlet, order.channel, item_code)
 			name, rate = _price(item_code, outlet.price_list)
 			if entry and flt(entry.price_override) > 0:
@@ -760,6 +805,7 @@ def order_command(command, event_id, order_name=None, expected_revision=None, gu
 			line_note = "\n".join(filter(None, [deal_contents, guest_note]))
 			display_name = (entry.name_en or name) if entry else name
 			order.append("lines", {"item": item_code, "item_name": display_name, "qty": qty,
+				"uom": uom, "weighed": int(weighed),
 				"rate": rate, "amount": qty * rate, "station": entry.station if entry else None,
 				"note": line_note, "modifiers_json": json.dumps(modifiers, ensure_ascii=False)})
 			_reprice(order, outlet)
@@ -767,9 +813,7 @@ def order_command(command, event_id, order_name=None, expected_revision=None, gu
 			line = next((row for row in order.lines if row.name == command.get("line")), None)
 			if not line:
 				frappe.throw("Order line not found")
-			qty = flt(command.get("qty"))
-			if qty < 0:
-				frappe.throw("Quantity cannot be negative")
+			qty, _, _ = _sale_quantity(line.item, command.get("qty"), allow_zero=True)
 			if qty == 0:
 				order.remove(line)
 			else:
@@ -1055,9 +1099,7 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 	if root_order.loyalty_points_to_redeem:
 		invoice.remarks += f"; loyalty {root_order.loyalty_points_to_redeem} points"
 	all_lines = [line for ticket in group for line in ticket.lines]
-	for line in all_lines:
-		invoice.append("items", {"item_code": line.item, "item_name": line.item_name,
-			"qty": line.qty, "rate": line.rate, "warehouse": outlet.warehouse})
+	priced = _append_priced_items(invoice, all_lines, outlet.warehouse)
 	# ERPNext's party detail loader checks Account permissions even for an exact,
 	# server-selected receivable account. Populate those internals with the trusted
 	# service identity, then restore the cashier before writing the invoice.
@@ -1069,9 +1111,9 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 		invoice.set("taxes", [])
 		invoice.set_taxes()
 	_use_tax_inclusive_prices(invoice)
-	for item, line in zip(invoice.items, all_lines, strict=True):
-		item.rate = line.rate
-		item.price_list_rate = line.rate
+	for item, rate in priced:
+		item.rate = rate
+		item.price_list_rate = rate
 	invoice.calculate_taxes_and_totals()
 	if bill["discount_amount"] or bill["loyalty"]["amount"]:
 		invoice.apply_discount_on = "Grand Total"
@@ -1143,9 +1185,7 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 def return_order(order_name, event_id, expected_revision):
 	"""Create one full POS Invoice return for a settled till order.
 
-	Partial line returns need a return-specific quantity and stock policy, so the
-	first release deliberately accepts only a full invoice return. ERPNext owns
-	tax, stock, payment reversal, and duplicate-return validation.
+	ERPNext owns tax, stock, payment reversal, and duplicate-return validation.
 	"""
 	_staff()
 	if frappe.request and frappe.request.method != "POST":
@@ -1169,6 +1209,7 @@ def return_order(order_name, event_id, expected_revision):
 		frappe.throw("Order changed; refresh before return", frappe.TimestampMismatchError)
 	if order.status != "Settled" or not order.pos_invoice:
 		frappe.throw("Only a settled order can be returned")
+	frappe.db.sql("SELECT name FROM `tabPOS Invoice` WHERE name=%s FOR UPDATE", order.pos_invoice)
 	if frappe.db.exists("POS Invoice", {"name": order.pos_invoice, "docstatus": 0}):
 		frappe.throw("The source POS Invoice is not submitted")
 	if frappe.db.exists("POS Invoice", {"return_against": order.pos_invoice, "docstatus": 1}):
@@ -1184,13 +1225,154 @@ def return_order(order_name, event_id, expected_revision):
 		return_doc.remarks = f"S&S (Seat & Serve) full return for order {order.order_number}"
 		return_doc.insert(ignore_permissions=True)
 		return_doc.submit()
-	order.revision += 1
-	order.save(ignore_permissions=True)
+	for ticket in _table_session_orders(order):
+		if ticket.pos_invoice == source.name and ticket.status == "Settled":
+			ticket.status = "Returned"
+			ticket.revision += 1
+			ticket.save(ignore_permissions=True)
+	order = frappe.get_doc("TRT Order", order_name)
 	result = {"order": order.name, "status": "Returned", "return_invoice": return_doc.name,
 		"revision": order.revision}
 	frappe.get_doc({"doctype": "TRT Sync Event", "event_id": event_id,
 		"outlet": order.outlet, "register": order.register, "order": order.name,
 		"event_type": "return", "payload_json": json.dumps({**payload, "result": result}),
+		"status": "Applied", "received_at": now_datetime()}).insert(ignore_permissions=True)
+	return result
+
+
+@frappe.whitelist(methods=["POST"])
+def return_line(order_name, line_name, quantity, stock_disposition, reason, event_id, expected_revision):
+	"""Return part of one sold line, including its modifier Items, through ERPNext.
+
+	Restock goes to the sale warehouse. Damaged goes to the outlet's quarantine
+	warehouse. Serial or batch tracked Items require ERPNext's dedicated return UI.
+	"""
+	_staff({"System Manager", "TRT Manager"})
+	if not event_id or not (reason or "").strip():
+		frappe.throw("Return event ID and reason are required")
+	if stock_disposition not in ("Restock", "Damaged"):
+		frappe.throw("Choose Restock or Damaged for returned stock")
+	try:
+		quantity_decimal = Decimal(str(quantity))
+	except (InvalidOperation, TypeError):
+		frappe.throw("Return quantity must be a number")
+	if (not quantity_decimal.is_finite() or quantity_decimal <= 0
+		or quantity_decimal.as_tuple().exponent < -3):
+		frappe.throw("Return quantity must be positive with at most three decimal places")
+	payload = {"order": order_name, "line": line_name, "quantity": str(quantity_decimal),
+		"stock_disposition": stock_disposition, "reason": reason.strip()}
+	prior = frappe.db.get_value("TRT Sync Event", {"event_id": event_id},
+		["order", "payload_json"], as_dict=True)
+	if prior:
+		stored = frappe.parse_json(prior.payload_json)
+		if prior.order != order_name or any(stored.get(key) != value for key, value in payload.items()):
+			frappe.throw("Event ID belongs to another return")
+		return stored["result"]
+	frappe.db.sql("SELECT name FROM `tabTRT Order` WHERE name=%s FOR UPDATE", order_name)
+	order = frappe.get_doc("TRT Order", order_name)
+	_staff_outlet(order.outlet)
+	if int(expected_revision) != order.revision:
+		frappe.throw("Order changed; refresh before return", frappe.TimestampMismatchError)
+	if order.status not in ("Settled", "Partially Returned") or not order.pos_invoice:
+		frappe.throw("Only a settled order can receive a line return")
+	frappe.db.sql("SELECT name FROM `tabPOS Invoice` WHERE name=%s FOR UPDATE", order.pos_invoice)
+	outlet = _outlet(order.outlet)
+	source = frappe.get_doc("POS Invoice", order.pos_invoice)
+	if source.docstatus != 1 or source.is_return or flt(source.loyalty_points) or flt(source.loyalty_amount):
+		frappe.throw("Source invoice is not eligible for a partial return")
+	group = _table_session_orders(order)
+	all_lines = [line for ticket in group for line in ticket.lines]
+	expected_rows = sum(1 + len(frappe.parse_json(line.modifiers_json) if line.modifiers_json else [])
+		for line in all_lines)
+	if expected_rows != len(source.items):
+		frappe.throw("This older invoice cannot safely map order lines to invoice items")
+	selected = None
+	position = 0
+	for line in all_lines:
+		modifiers = frappe.parse_json(line.modifiers_json) if line.modifiers_json else []
+		codes = [line.item, *(option["item"] for option in modifiers)]
+		invoice_rows = source.items[position:position + len(codes)]
+		if [item.item_code for item in invoice_rows] != codes or any(
+			abs(flt(item.qty) - flt(line.qty)) > 0.0001 for item in invoice_rows):
+			frappe.throw("Invoice items do not match their sold order lines")
+		if line.name == line_name:
+			selected = invoice_rows
+		position += len(codes)
+	if not selected:
+		frappe.throw("Order line not found on this invoice")
+	_sale_quantity(selected[0].item_code, str(quantity_decimal))
+	if stock_disposition == "Damaged":
+		quarantine = outlet.damaged_return_warehouse
+		warehouse = frappe.db.get_value("Warehouse", quarantine,
+			["company", "is_group", "disabled"], as_dict=True) if quarantine else None
+		if not warehouse or warehouse.company != outlet.company or warehouse.is_group or warehouse.disabled:
+			frappe.throw("Configure an enabled damaged-return warehouse for this outlet")
+	from erpnext.accounts.doctype.pos_invoice.pos_invoice import make_sales_return
+	actor = frappe.session.user
+	with _as_admin():
+		return_doc = make_sales_return(source.name)
+		by_source = {item.pos_invoice_item: item for item in return_doc.items}
+		chosen = []
+		for original in selected:
+			item = by_source.get(original.name)
+			if not item or abs(Decimal(str(item.qty))) < quantity_decimal:
+				frappe.throw("Return quantity exceeds the remaining sold quantity")
+			if original.serial_no or original.batch_no:
+				frappe.throw("Serial or batch tracked Items need ERPNext's dedicated return flow")
+			item.qty = -float(quantity_decimal)
+			item.stock_qty = -float(quantity_decimal) * flt(item.conversion_factor or 1)
+			if frappe.db.get_value("Item", item.item_code, "is_stock_item"):
+				item.warehouse = (outlet.damaged_return_warehouse if stock_disposition == "Damaged"
+					else original.warehouse)
+			chosen.append(item)
+		return_doc.set("items", chosen)
+		precision = Decimal("1") if source.currency == "LBP" else Decimal("0.01")
+		selected_gross = sum(Decimal(str(item.amount)) for item in selected)
+		source_gross = Decimal(str(source.total))
+		if source_gross <= 0:
+			frappe.throw("Original invoice total is invalid")
+		return_doc.discount_amount = -float((Decimal(str(source.discount_amount or 0))
+			* selected_gross / source_gross * quantity_decimal / Decimal(str(selected[0].qty)))
+			.quantize(precision, rounding=ROUND_HALF_UP))
+		for payment in return_doc.payments:
+			payment.amount = 0
+		return_doc.paid_amount = 0
+		return_doc.calculate_taxes_and_totals()
+		refund_due = abs(Decimal(str(return_doc.rounded_total or return_doc.grand_total)))
+		original_payments = [Decimal(str(payment.amount)) for payment in source.payments]
+		original_paid = sum(original_payments)
+		if original_paid <= 0:
+			frappe.throw("Original payment allocation is unavailable")
+		allocated = Decimal(0)
+		for index, payment in enumerate(return_doc.payments):
+			share = (refund_due - allocated if index == len(return_doc.payments) - 1 else
+				(refund_due * original_payments[index] / original_paid).quantize(precision, rounding=ROUND_HALF_UP))
+			payment.amount = -float(share)
+			allocated += share
+		return_doc.paid_amount = -float(refund_due)
+		return_doc.remarks = (f"S&S partial return for {order.order_number}, line {line_name}; "
+			f"{stock_disposition}; {reason.strip()}; approved by {actor}")
+		return_doc.insert(ignore_permissions=True)
+		return_doc.submit()
+	return_names = frappe.get_all("POS Invoice", filters={"return_against": source.name,
+		"docstatus": 1}, pluck="name")
+	returned_qty = {item.name: Decimal(0) for item in source.items}
+	for return_name in return_names:
+		for item in frappe.get_doc("POS Invoice", return_name).items:
+			if item.pos_invoice_item in returned_qty:
+				returned_qty[item.pos_invoice_item] += abs(Decimal(str(item.qty)))
+	fully_returned = all(returned_qty[item.name] >= Decimal(str(item.qty)) for item in source.items)
+	for ticket in group:
+		if ticket.pos_invoice == source.name:
+			ticket.status = "Returned" if fully_returned else "Partially Returned"
+			ticket.revision += 1
+			ticket.save(ignore_permissions=True)
+	order = frappe.get_doc("TRT Order", order_name)
+	result = {"order": order.name, "status": order.status, "return_invoice": return_doc.name,
+		"quantity": str(quantity_decimal), "revision": order.revision}
+	frappe.get_doc({"doctype": "TRT Sync Event", "event_id": event_id,
+		"outlet": order.outlet, "register": order.register, "order": order.name,
+		"event_type": "partial_return", "payload_json": json.dumps({**payload, "result": result}),
 		"status": "Applied", "received_at": now_datetime()}).insert(ignore_permissions=True)
 	return result
 

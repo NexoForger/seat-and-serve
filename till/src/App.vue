@@ -91,6 +91,10 @@ async function saveShift() {
 
 const tenders = ref<{ mode_of_payment: string; currency: string; amount: number }[]>([]);
 const canManageDiscount = ref(false);
+const returnLineName = ref('');
+const returnQty = ref(1);
+const returnDisposition = ref<'Restock' | 'Damaged'>('Restock');
+const returnReason = ref('');
 const billCustomer = ref('');
 const selectedCustomerName = ref('');
 const customerQuery = ref('');
@@ -524,6 +528,13 @@ async function changeQty(line: Order['lines'][number], qty: number) {
   finally { busy.value = false; }
 }
 
+function changeWeighedQty(line: Order['lines'][number], event: Event) {
+  const input = event.target as HTMLInputElement;
+  const qty = Number(input.value);
+  input.value = String(line.qty);
+  if (Number.isFinite(qty) && qty > 0) void changeQty(line, qty);
+}
+
 function addTender() {
   tenders.value.push({ mode_of_payment: options.value?.cash_modes[0] || 'Cash',
     currency: order.value?.currency || 'USD', amount: tenders.value.length ? 0 : billAmountDue.value });
@@ -632,6 +643,22 @@ async function printReceipt() {
   finally { busy.value = false; }
 }
 
+async function returnLine() {
+  if (!order.value || !returnLineName.value || !returnReason.value.trim() || busy.value) return;
+  busy.value = true; notice.value = '';
+  try {
+    const result = await post<{ return_invoice: string }>('return_line', {
+      order_name: order.value.name, line_name: returnLineName.value, quantity: returnQty.value,
+      stock_disposition: returnDisposition.value, reason: returnReason.value.trim(),
+      event_id: eventId(), expected_revision: order.value.revision,
+    });
+    order.value = await get<Order>('register_order', { outlet: outlet.value, order_name: order.value.name });
+    returnLineName.value = ''; returnReason.value = '';
+    setNotice(text(`Return posted · ${result.return_invoice}`, `تم تسجيل المرتجع · ${result.return_invoice}`), 'success');
+  } catch (error) { setNotice(String(error), 'error'); }
+  finally { busy.value = false; }
+}
+
 async function send() {
   if (!order.value) return;
   busy.value = true; notice.value = '';
@@ -730,7 +757,7 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
         <Transition name="feedback"><Feedback v-if="busy" class="register-feedback" kind="busy" :message="text('Working on it…', 'جارٍ التنفيذ…')" :language="language" /><Feedback v-else-if="notice" class="register-feedback" :kind="noticeKind" :message="notice" :language="language" dismissible @dismiss="notice = ''" /></Transition>
         <p v-if="!order?.lines.length" class="register-empty-order">{{ text('Tap an item to start this order.', 'اضغط على صنف لبدء الطلب.') }}</p>
         <TransitionGroup name="order-line" tag="div" class="register-line-list"><div v-for="line in order?.lines || []" :key="line.name" class="register-line">
-          <div><strong>{{ line.item_name }}</strong><small v-if="line.modifiers?.length" class="register-line-modifiers">{{ line.modifiers.map(option => rtl ? option.name_ar || option.name_en : option.name_en).join(', ') }}</small><small v-if="line.note" class="register-line-modifiers">{{ line.note }}</small><div class="register-qty"><button type="button" :disabled="busy || !editable" :aria-label="text('Decrease quantity of ', 'تقليل كمية ') + line.item_name" @click="changeQty(line, line.qty - 1)">−</button><span>{{ line.qty }}</span><button type="button" :disabled="busy || !editable" :aria-label="text('Increase quantity of ', 'زيادة كمية ') + line.item_name" @click="changeQty(line, line.qty + 1)">+</button></div></div>
+          <div><strong>{{ line.item_name }}</strong><small v-if="line.modifiers?.length" class="register-line-modifiers">{{ line.modifiers.map(option => rtl ? option.name_ar || option.name_en : option.name_en).join(', ') }}</small><small v-if="line.note" class="register-line-modifiers">{{ line.note }}</small><label v-if="line.weighed" class="register-weighed-qty">{{ text('Weight', 'الوزن') }} ({{ line.uom }}) <input :value="line.qty" type="number" min="0.001" max="1000" step="0.001" inputmode="decimal" :disabled="busy || !editable" @change="changeWeighedQty(line, $event)" /></label><div v-else class="register-qty"><button type="button" :disabled="busy || !editable" :aria-label="text('Decrease quantity of ', 'تقليل كمية ') + line.item_name" @click="changeQty(line, line.qty - 1)">−</button><span>{{ line.qty }}</span><button type="button" :disabled="busy || !editable" :aria-label="text('Increase quantity of ', 'زيادة كمية ') + line.item_name" @click="changeQty(line, line.qty + 1)">+</button></div></div>
           <strong>{{ price(line.amount) }}</strong>
         </div></TransitionGroup>
       </div>
@@ -740,8 +767,8 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
         <div class="register-total"><span>{{ text('Total', 'الإجمالي') }}</span><strong>{{ price(billGrandTotal) }}</strong></div>
         <div class="register-breakdown"><span>{{ text('Subtotal', 'المجموع') }} {{ price(billNetTotal) }}</span><span>{{ text('Tax included', 'الضريبة مشمولة') }} {{ price(billTaxTotal) }}</span></div>
         <div v-if="order?.bill?.discount_amount || order?.bill?.loyalty?.amount" class="register-savings"><span v-if="order.bill.discount_amount">{{ order.bill.discount_label || text('Discount', 'الخصم') }} −{{ price(order.bill.discount_amount) }}</span><span v-if="order.bill.loyalty?.amount">{{ text('Loyalty points', 'نقاط الولاء') }} −{{ price(order.bill.loyalty.amount) }}</span><strong>{{ text('Amount due', 'المبلغ المستحق') }} {{ price(billAmountDue) }}</strong></div>
-        <div class="register-actions"><button type="button" :disabled="busy || !order?.lines.length || order?.status !== 'Draft'" @click="send">{{ text('Send to kitchen', 'إرسال للمطبخ') }}</button><button type="button" :disabled="busy || !outlet || loading" @click="createOrder">{{ channel === 'Table' && selectedTableTickets.length ? text('Add items', 'إضافة أصناف') : text('New order', 'طلب جديد') }}</button><button type="button" :disabled="busy || !billItemCount || order?.status === 'Settled'" :aria-expanded="showPayment" @click="togglePayment">{{ text('Cash payment', 'الدفع النقدي') }}</button></div>
-        <Transition name="register-panel"><div v-if="showPayment && billItemCount && order?.status !== 'Settled'" class="register-payment">
+        <div class="register-actions"><button type="button" :disabled="busy || !order?.lines.length || order?.status !== 'Draft'" @click="send">{{ text('Send to kitchen', 'إرسال للمطبخ') }}</button><button type="button" :disabled="busy || !outlet || loading" @click="createOrder">{{ channel === 'Table' && selectedTableTickets.length ? text('Add items', 'إضافة أصناف') : text('New order', 'طلب جديد') }}</button><button type="button" :disabled="busy || !billItemCount || !order || !['Draft', 'Sent', 'Preparing', 'Ready', 'Served'].includes(order.status)" :aria-expanded="showPayment" @click="togglePayment">{{ text('Cash payment', 'الدفع النقدي') }}</button></div>
+        <Transition name="register-panel"><div v-if="showPayment && billItemCount && order && ['Draft', 'Sent', 'Preparing', 'Ready', 'Served'].includes(order.status)" class="register-payment">
           <h2>{{ channel === 'Table' ? text('Pay table bill', 'دفع حساب الطاولة') : text('Cash payment', 'الدفع النقدي') }}</h2>
           <p v-if="channel === 'Table'" class="register-payment-summary">{{ text('This payment includes', 'يشمل هذا الدفع') }} {{ billOrderNumbers.join(', ') }} · {{ price(billGrandTotal) }}</p>
           <p v-for="error in order?.bill?.billing_errors || []" :key="error" class="register-payment-warning" role="alert">{{ error }}</p>
@@ -764,7 +791,15 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
           <div v-for="(tender, index) in tenders" :key="index" class="register-tender"><select v-model="tender.mode_of_payment" :aria-label="text('Payment method', 'وسيلة الدفع')"><option v-for="mode in options?.cash_modes || []" :key="mode">{{ mode }}</option></select><select v-model="tender.currency" :aria-label="text('Currency', 'العملة')"><option>{{ order?.currency || 'USD' }}</option><option v-if="order?.currency !== 'LBP'">LBP</option><option v-else>USD</option></select><input v-model.number="tender.amount" type="number" min="0" step="any" :aria-label="text('Tender amount', 'قيمة الدفع')" /><button type="button" :aria-label="text('Remove payment', 'إزالة الدفعة')" @click="tenders.splice(index, 1)">×</button></div>
           <button class="register-add-tender" type="button" @click="addTender">+ {{ text('Add payment amount', 'إضافة مبلغ دفع') }}</button><p v-if="options?.fx_rate">1 USD = {{ options.fx_rate.lbp_per_usd }} LBP</p><button class="register-confirm-payment" type="button" :disabled="busy || !options?.opening_entry || !options?.pos_invoice_mode || !options?.cash_modes.length" @click="checkout">{{ text('Confirm cash payment', 'تأكيد الدفع النقدي') }}</button>
         </div></Transition>
-        <p v-if="order?.pos_invoice" class="register-invoice">{{ text('Paid', 'تم الدفع') }} · {{ order.pos_invoice }} <button type="button" :disabled="busy" @click="printReceipt">{{ text('Reprint receipt', 'إعادة طباعة الإيصال') }}</button></p>
+        <p v-if="order?.pos_invoice" class="register-invoice">{{ order.status }} · {{ order.pos_invoice }} <button v-if="order.status === 'Settled'" type="button" :disabled="busy" @click="printReceipt">{{ text('Reprint receipt', 'إعادة طباعة الإيصال') }}</button></p>
+        <div v-if="canManageDiscount && order?.pos_invoice && ['Settled', 'Partially Returned'].includes(order.status)" class="register-return">
+          <h3>{{ text('Return sold line', 'إرجاع صنف مباع') }}</h3>
+          <label>{{ text('Item', 'الصنف') }}<select v-model="returnLineName"><option value="">{{ text('Choose line', 'اختر صنفاً') }}</option><option v-for="line in order.lines" :key="line.name" :value="line.name">{{ line.item_name }} · {{ line.qty }} {{ line.uom }}</option></select></label>
+          <label>{{ text('Quantity to return', 'الكمية المرتجعة') }}<input v-model.number="returnQty" type="number" min="0.001" step="0.001" /></label>
+          <label>{{ text('Stock handling', 'معالجة المخزون') }}<select v-model="returnDisposition"><option value="Restock">{{ text('Restock', 'إعادة للمخزون') }}</option><option value="Damaged">{{ text('Damaged warehouse', 'مخزن التالف') }}</option></select></label>
+          <label>{{ text('Reason', 'السبب') }}<input v-model="returnReason" type="text" maxlength="140" /></label>
+          <button type="button" :disabled="busy || !returnLineName || !(returnQty > 0) || !returnReason.trim()" @click="returnLine">{{ text('Post return', 'تسجيل المرتجع') }}</button>
+        </div>
       </div>
     </aside>
 

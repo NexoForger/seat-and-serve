@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { timingSafeEqual } from 'node:crypto';
 import { openStore } from './store.mjs';
 import { device } from './devices.mjs';
+import { syncPending } from './sync.mjs';
+import { kitchenTicketBytes, drawerPulseBytes, sendEscpos } from './escpos.mjs';
 
 const required = ['TRT_GATEWAY_CERT', 'TRT_GATEWAY_KEY', 'TRT_GATEWAY_TOKEN',
   'TRT_SITE_URL', 'TRT_SITE_API_TOKEN', 'TRT_OUTLET'];
@@ -61,47 +63,6 @@ async function refresh() {
   return result;
 }
 
-async function sync() {
-  const result = { applied: 0, conflicts: 0, offline: false };
-  for (const event of store.pending()) {
-    const command = JSON.parse(event.command_json);
-    const order = store.getOrder(event.order_id);
-    if (command.action === 'cash_accepted') {
-      store.mark(event.event_id, 'Conflict', 'Cash requires manager settlement in ERPNext');
-      result.conflicts++;
-      continue;
-    }
-    try {
-      const remote = await central('order_command', {
-        command: command.action === 'create' ? { ...command, outlet } : command,
-        event_id: event.event_id, order_name: order.remote_id || undefined,
-        expected_revision: event.expected_revision,
-      }, true);
-      if (command.action === 'create') store.setRemote(order.id, remote.name);
-      if (command.action === 'add_line') {
-        const local = order.lines.find(row => row.item === command.item);
-        const confirmed = remote.lines.find(row => row.item === command.item);
-        if (local && confirmed && local.rate !== confirmed.rate) {
-          store.mark(event.event_id, 'Conflict', 'Price changed; manager review required', remote.revision);
-          result.conflicts++;
-          break;
-        }
-      }
-      store.mark(event.event_id, 'Applied', null, remote.revision);
-      result.applied++;
-    } catch (error) {
-      if (error instanceof TypeError || error.name === 'TimeoutError') {
-        result.offline = true;
-        break;
-      }
-      store.mark(event.event_id, 'Conflict', String(error));
-      result.conflicts++;
-      break;
-    }
-  }
-  return result;
-}
-
 const server = createServer({ key: readFileSync(process.env.TRT_GATEWAY_KEY),
   cert: readFileSync(process.env.TRT_GATEWAY_CERT) }, async (req, res) => {
   if (!authenticated(req)) return send(res, 401, { error: 'Unauthorized' });
@@ -115,10 +76,25 @@ const server = createServer({ key: readFileSync(process.env.TRT_GATEWAY_KEY),
       return send(res, 200, { ticket: store.updateTicket(await body(req)), provisional: true });
     }
     if (req.method === 'POST' && req.url === '/refresh') return send(res, 200, await refresh());
-    if (req.method === 'POST' && req.url === '/sync') return send(res, 200, await sync());
+    if (req.method === 'POST' && req.url === '/sync') return send(res, 200, await syncPending(store, central, outlet));
     if (req.method === 'POST' && req.url === '/device/simulate') {
       const input = await body(req);
       return send(res, 200, await device(input.kind).perform(input.operation, input.payload));
+    }
+    if (req.method === 'POST' && req.url === '/device/kitchen/print') {
+      const input = await body(req);
+      const ticket = store.state().tickets.find(row => row.id === input.ticket_id);
+      const order = ticket && store.getOrder(ticket.order_id);
+      const result = await sendEscpos(process.env.TRT_KITCHEN_PRINTER_ADDRESS,
+        kitchenTicketBytes(ticket, order, input.reprint === true));
+      return send(res, 200, { ...result, ticket_id: ticket.id });
+    }
+    if (req.method === 'POST' && req.url === '/device/drawer/open') {
+      const input = await body(req);
+      const order = store.getOrder(input.order_id);
+      if (!order?.cash.length) throw new Error('Recorded cash tender required to open drawer');
+      const result = await sendEscpos(process.env.TRT_DRAWER_PRINTER_ADDRESS, drawerPulseBytes);
+      return send(res, 200, { ...result, order_id: order.id });
     }
     return send(res, 404, { error: 'Not found' });
   } catch (error) { return send(res, 400, { error: String(error) }); }

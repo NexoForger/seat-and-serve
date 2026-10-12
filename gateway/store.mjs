@@ -67,7 +67,7 @@ export function openStore(path) {
     } else if (!existing || existing.revision !== expected_revision) {
       throw new Error('Order revision conflict');
     }
-    if (existing && ['Settled', 'Void'].includes(existing.status)) throw new Error('Order is closed');
+    if (existing && ['Settled', 'Void', 'CashPending'].includes(existing.status)) throw new Error('Order is closed');
     if (existing && existing.status !== 'Draft' && ['add_line', 'set_qty'].includes(command.action)) {
       throw new Error('Sent order cannot be changed');
     }
@@ -88,11 +88,17 @@ export function openStore(path) {
       if (!order.lines.length) throw new Error('Empty order');
       order.status = 'Sent';
     } else if (command.action === 'cash_accepted') {
-      if (!(Number(command.amount) > 0) || !['USD', 'LBP'].includes(command.currency)) {
+      if (order.status !== 'Sent' || !Number.isFinite(Number(command.amount)) ||
+        !(Number(command.amount) > 0) || !['USD', 'LBP'].includes(command.currency) ||
+        typeof command.mode_of_payment !== 'string' || !command.mode_of_payment.trim()) {
         throw new Error('Invalid cash tender');
       }
       order.cash.push({ amount: Number(command.amount), currency: command.currency,
+        mode_of_payment: command.mode_of_payment.trim(),
         accepted_at: new Date().toISOString(), event_id });
+    } else if (command.action === 'settle_cash') {
+      if (order.status !== 'Sent' || !order.cash.length) throw new Error('Accepted cash required before settlement');
+      order.status = 'CashPending';
     } else if (command.action !== 'create') throw new Error('Unknown command');
     const now = new Date().toISOString();
     db.exec('BEGIN IMMEDIATE');
@@ -139,12 +145,32 @@ export function openStore(path) {
       } catch (error) { db.exec('ROLLBACK'); throw error; }
     },
     pending() { return db.prepare("SELECT * FROM events WHERE status='Pending' ORDER BY created_at, rowid").all(); },
+    hasBlockingConflict(orderId) {
+      return !!db.prepare("SELECT 1 FROM events WHERE order_id=? AND status='Conflict' LIMIT 1").get(orderId);
+    },
     mark(event_id, status, error, remote_revision) {
       db.prepare('UPDATE events SET status=?, error=?, remote_revision=? WHERE event_id=?')
         .run(status, error || null, remote_revision || null, event_id);
     },
     setRemote(id, remote_id) {
       db.prepare('UPDATE orders SET remote_id=? WHERE id=?').run(remote_id, id);
+    },
+    remoteRevision(id) {
+      return db.prepare("SELECT remote_revision FROM events WHERE order_id=? AND status='Applied' AND remote_revision IS NOT NULL ORDER BY rowid DESC LIMIT 1")
+        .get(id)?.remote_revision;
+    },
+    markCashSettled(id) {
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        for (const event of db.prepare("SELECT event_id, command_json FROM events WHERE order_id=? AND status='Pending'").all(id)) {
+          if (JSON.parse(event.command_json).action === 'cash_accepted') {
+            db.prepare("UPDATE events SET status='Applied' WHERE event_id=?").run(event.event_id);
+          }
+        }
+        db.prepare("UPDATE orders SET status='Settled', updated_at=? WHERE id=?")
+          .run(new Date().toISOString(), id);
+        db.exec('COMMIT');
+      } catch (error) { db.exec('ROLLBACK'); throw error; }
     },
     updateTicket({ ticket_id, status, event_id, expected_revision }) {
       const prior = db.prepare('SELECT * FROM ticket_events WHERE event_id=?').get(event_id);

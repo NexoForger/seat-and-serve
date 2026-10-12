@@ -289,6 +289,59 @@ def run():
 		returned = api.return_order(created["name"], return_event, settled["revision"])
 		assert returned["status"] == "Returned" and returned["return_invoice"]
 		assert api.return_order(created["name"], return_event, settled["revision"])["return_invoice"] == returned["return_invoice"]
+		partial_order = api.order_command({"action": "create", "outlet": outlet.name,
+			"channel": "Till"}, str(uuid.uuid4()), expected_revision=0)
+		partial_order = api.order_command({"action": "add_line", "item": item, "qty": 2},
+			str(uuid.uuid4()), partial_order["name"], partial_order["revision"])
+		partial_order = api.cash_checkout(partial_order["name"],
+			[{"mode_of_payment": "Cash", "currency": "USD", "amount": partial_order["bill"]["amount_due"]}],
+			str(uuid.uuid4()), partial_order["revision"])
+		partial_event = str(uuid.uuid4())
+		partial = api.return_line(partial_order["name"], partial_order["lines"][0]["name"], 1,
+			"Restock", "Smoke damaged package", partial_event, partial_order["revision"])
+		assert partial["status"] == "Partially Returned"
+		assert api.return_line(partial_order["name"], partial_order["lines"][0]["name"], 1,
+			"Restock", "Smoke damaged package", partial_event, partial_order["revision"])["return_invoice"] == partial["return_invoice"]
+		final_part = api.return_line(partial_order["name"], partial_order["lines"][0]["name"], 1,
+			"Restock", "Smoke second return", str(uuid.uuid4()), partial["revision"])
+		assert final_part["status"] == "Returned"
+		modifier_item = frappe.get_doc({"doctype": "Item",
+			"item_code": f"TRT-MOD-{uuid.uuid4().hex[:8]}", "item_name": "Extra syrup",
+			"item_group": frappe.db.get_value("Item", item, "item_group"),
+			"stock_uom": frappe.db.get_value("Item", item, "stock_uom"),
+			"is_stock_item": 0, "is_sales_item": 1}).insert(ignore_permissions=True)
+		group = frappe.get_doc({"doctype": "TRT Modifier Group", "title": "Smoke extras",
+			"minimum": 0, "options": [{"item": modifier_item.name,
+				"name_en": "Extra syrup", "price_delta": 1}]}).insert(ignore_permissions=True)
+		menu.reload()
+		menu.items[0].modifier_group = group.name
+		menu.save(ignore_permissions=True)
+		frappe.clear_cache()
+		modified = api.order_command({"action": "create", "outlet": outlet.name,
+			"channel": "Till"}, str(uuid.uuid4()), expected_revision=0)
+		modified = api.order_command({"action": "add_line", "item": item, "qty": 2,
+			"modifiers": [modifier_item.name]}, str(uuid.uuid4()), modified["name"], modified["revision"])
+		modified = api.cash_checkout(modified["name"],
+			[{"mode_of_payment": "Cash", "currency": "USD", "amount": modified["bill"]["amount_due"]}],
+			str(uuid.uuid4()), modified["revision"])
+		modifier_invoice = frappe.get_doc("POS Invoice", modified["pos_invoice"])
+		assert [row.item_code for row in modifier_invoice.items] == [item, modifier_item.name]
+		modified_return = api.return_line(modified["name"], modified["lines"][0]["name"], 1,
+			"Restock", "Smoke modifier return", str(uuid.uuid4()), modified["revision"])
+		assert len(frappe.get_doc("POS Invoice", modified_return["return_invoice"]).items) == 2
+		weighed_item = frappe.get_doc({"doctype": "Item",
+			"item_code": f"TRT-WEIGH-{uuid.uuid4().hex[:8]}", "item_name": "Smoke weighed item",
+			"item_group": frappe.db.get_value("Item", item, "item_group"),
+			"stock_uom": "Kg", "is_stock_item": 0, "is_sales_item": 1}).insert(ignore_permissions=True)
+		frappe.get_doc({"doctype": "Item Price", "item_code": weighed_item.name,
+			"price_list": profile.selling_price_list, "selling": 1,
+			"price_list_rate": 10, "valid_from": frappe.utils.today()}).insert(ignore_permissions=True)
+		weighed = api.order_command({"action": "create", "outlet": outlet.name,
+			"channel": "Retail"}, str(uuid.uuid4()), expected_revision=0)
+		weighed = api.order_command({"action": "add_line", "item": weighed_item.name, "qty": "1.250"},
+			str(uuid.uuid4()), weighed["name"], weighed["revision"])
+		assert weighed["lines"][0]["weighed"] and weighed["lines"][0]["qty"] == 1.25
+		assert weighed["lines"][0]["amount"] == 12.5
 		area = frappe.get_doc({"doctype": "TRT Service Area", "title": "Smoke Dining Room",
 			"outlet": outlet.name, "enabled": 1}).insert(ignore_permissions=True)
 		tax_account = frappe.db.get_value("Account", {"company": profile.company,
@@ -519,6 +572,75 @@ def migration_run():
 	finally:
 		if file:
 			file.delete(ignore_permissions=True)
+		frappe.db.rollback()
+
+
+def history_migration_run():
+	"""Import and reconcile source sales without posting duplicate ERPNext invoices."""
+	frappe.set_user("Administrator")
+	file = None
+	try:
+		job = frappe.get_doc("TRT Import Job", migration.new_job("Generic", "Sale")["job"])
+		content = ("id,date,branch,amount,currency,item\n"
+			"SALE-1,2026-09-01,Branch A,12.50,USD,Coffee\n"
+			"SALE-2,2026-09-02,Branch A,7.25,USD,Tea\n").encode()
+		file = save_file(f"trt-history-smoke-{uuid.uuid4()}.csv", content,
+			"TRT Import Job", job.name, is_private=1)
+		migration.attach_export(job.name, file.name)
+		mapping = {"source_id": "id", "date": "date", "branch": "branch",
+			"amount": "amount", "currency": "currency"}
+		preview = migration.preview(job.name, json.dumps(mapping))
+		assert preview["rows"] == 2 and not preview["errors"]
+		result = migration.import_history(job.name)
+		assert result["reconciled"] and result["counts"]["imported"] == 2
+		assert result["source_totals"][0]["amount"] == "19.75"
+		retry = migration.import_history(job.name)
+		assert retry["reconciled"] and retry["counts"]["already_imported"] == 2
+		return {"imported": 2, "reconciled": True}
+	finally:
+		if file:
+			file.delete(ignore_permissions=True)
+		frappe.db.rollback()
+
+
+def desk_permissions_run():
+	"""Check branch isolation in Frappe lists, direct reads, and global APIs."""
+	frappe.set_user("Administrator")
+	company = frappe.db.get_value("Company", {"is_group": 0}, "name")
+	assert company
+	try:
+		branches = []
+		outlets = []
+		for number in (1, 2):
+			branch = frappe.get_doc({"doctype": "Branch",
+				"branch": f"TRT permission smoke {number} {uuid.uuid4().hex[:8]}"}).insert(ignore_permissions=True)
+			branches.append(branch)
+			outlets.append(frappe.get_doc({"doctype": "TRT Outlet",
+				"title": f"Permission outlet {number}", "company": company,
+				"branch": branch.name, "base_currency": "USD", "enabled": 1}).insert(ignore_permissions=True))
+		user = frappe.get_doc({"doctype": "User",
+			"email": f"trt-permissions-{uuid.uuid4().hex[:8]}@example.invalid",
+			"first_name": "TRT Permission Smoke", "send_welcome_email": 0,
+			"roles": [{"role": "TRT Manager"}]}).insert(ignore_permissions=True)
+		assignment = frappe.get_doc({"doctype": "TRT Staff Assignment", "user": user.name,
+			"outlet": outlets[0].name, "enabled": 1,
+			"allow_manager": 1}).insert(ignore_permissions=True)
+		frappe.set_user(user.name)
+		visible = {row.name for row in frappe.get_list("TRT Outlet", fields=["name"])}
+		assert outlets[0].name in visible and outlets[1].name not in visible
+		assert frappe.has_permission("TRT Outlet", "read", doc=outlets[0])
+		assert not frappe.has_permission("TRT Outlet", "read", doc=outlets[1])
+		assert not frappe.has_permission("TRT Staff Assignment", "write", doc=assignment)
+		for action in (onboarding.options, lambda: migration.source_inventory("Generic")):
+			try:
+				action()
+			except frappe.PermissionError:
+				pass
+			else:
+				raise AssertionError("Cross-branch API was available to outlet manager")
+		return {"visible_outlets": 1, "cross_branch_denied": True}
+	finally:
+		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
 

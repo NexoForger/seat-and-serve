@@ -192,6 +192,13 @@ async function changeQty(line: Order['lines'][number], qty: number) {
   finally { busy.value = false; }
 }
 
+function changeWeighedQty(line: Order['lines'][number], event: Event) {
+  const input = event.target as HTMLInputElement;
+  const qty = Number(input.value);
+  input.value = String(line.qty);
+  if (Number.isFinite(qty) && qty > 0) void changeQty(line, qty);
+}
+
 async function demoCheckout() {
   if (!order.value) return;
   busy.value = true; clearFeedback();
@@ -244,7 +251,7 @@ onUnmounted(() => {
         <Transition name="feedback"><Feedback v-if="busy" kind="busy" :message="label('Updating your order…', 'جارٍ تحديث طلبك…')" :language="language" /></Transition>
         <Transition name="feedback"><Feedback v-if="notice && !busy && !catalogHasError" :kind="noticeKind" :message="notice" :language="language" :class="{ [successClass]: noticeKind === 'success' }" dismissible @dismiss="notice = ''" /></Transition>
         <div v-if="!order?.lines.length" class="empty-order"><Icon name="bag" /><h3>{{ label('A little hungry?', 'هل تشعر بالجوع؟') }}</h3><p>{{ label('Tap something you like to start your order.', 'اختر ما يعجبك لبدء طلبك.') }}</p></div>
-        <TransitionGroup v-else name="order-line" tag="div" class="order-lines"><div v-for="line in order.lines" :key="line.name" class="line"><div><strong>{{ line.item_name }}</strong><small v-if="line.modifiers?.length" class="order-line-modifiers">{{ line.modifiers.map(option => rtl ? option.name_ar || option.name_en : option.name_en).join(', ') }}</small><small v-if="line.note" class="order-line-modifiers">{{ line.note }}</small><div class="quantity-control"><button :disabled="busy" :aria-label="label('Decrease quantity of ', 'تقليل كمية ') + line.item_name" @click="changeQty(line, line.qty - 1)">−</button><span>{{ line.qty }}</span><button :disabled="busy" :aria-label="label('Increase quantity of ', 'زيادة كمية ') + line.item_name" @click="changeQty(line, line.qty + 1)">+</button></div></div><strong>{{ price(line.amount) }}</strong></div></TransitionGroup>
+        <TransitionGroup v-else name="order-line" tag="div" class="order-lines"><div v-for="line in order.lines" :key="line.name" class="line"><div><strong>{{ line.item_name }}</strong><small v-if="line.modifiers?.length" class="order-line-modifiers">{{ line.modifiers.map(option => rtl ? option.name_ar || option.name_en : option.name_en).join(', ') }}</small><small v-if="line.note" class="order-line-modifiers">{{ line.note }}</small><label v-if="line.weighed" class="weighed-quantity">{{ label('Weight', 'الوزن') }} ({{ line.uom }}) <input :value="line.qty" type="number" min="0.001" max="1000" step="0.001" inputmode="decimal" :disabled="busy" @change="changeWeighedQty(line, $event)" /></label><div v-else class="quantity-control"><button :disabled="busy" :aria-label="label('Decrease quantity of ', 'تقليل كمية ') + line.item_name" @click="changeQty(line, line.qty - 1)">−</button><span>{{ line.qty }}</span><button :disabled="busy" :aria-label="label('Increase quantity of ', 'زيادة كمية ') + line.item_name" @click="changeQty(line, line.qty + 1)">+</button></div></div><strong>{{ price(line.amount) }}</strong></div></TransitionGroup>
         <div class="totals"><div><span>{{ label('Subtotal', 'المجموع') }}</span><span>{{ price(order?.net_total || 0) }}</span></div><div><span>{{ label('Tax', 'الضريبة') }}</span><span>{{ price(order?.tax_total || 0) }}</span></div><div class="grand-total"><strong>{{ label('Total', 'الإجمالي') }}</strong><strong>{{ price(order?.grand_total || 0) }}</strong></div></div>
         <button class="primary" :class="{ 'is-busy': busy }" :disabled="busy || !order?.lines.length" @click="demoCheckout">{{ busy ? label('Please wait…', 'يرجى الانتظار…') : label('Place demo order', 'إرسال طلب تجريبي') }}<Icon :name="busy ? 'refresh' : 'arrow'" :class="{ 'feedback-spin': busy }" /></button><p class="demo-note">{{ label('Demo checkout · No money is charged. Available when sandbox payments are enabled.', 'طلب تجريبي · لن يتم تحصيل أموال. متاح عند تفعيل الدفع التجريبي.') }}</p>
       </aside>

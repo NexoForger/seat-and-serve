@@ -27,11 +27,14 @@ test('local events persist, deduplicate, and enforce revisions', () => {
     assert.equal(store.updateTicket({ ticket_id: ticket.id, status: 'Preparing',
       event_id: 'ticket-1', expected_revision: 1 }).revision, 2);
     store.apply({ event_id: 'cash-1', order_id: created.id, expected_revision: 3,
-      command: { action: 'cash_accepted', amount: 10, currency: 'USD' } });
+      command: { action: 'cash_accepted', amount: 10, currency: 'USD', mode_of_payment: 'Cash' } });
+    store.apply({ event_id: 'settle-1', order_id: created.id, expected_revision: 4,
+      command: { action: 'settle_cash' } });
     store.db.close();
     store = openStore(path);
     assert.equal(store.getOrder(created.id).cash[0].amount, 10);
-    assert.equal(store.pending().length, 4);
+    assert.equal(store.pending().length, 5);
+    assert.equal(store.getOrder(created.id).status, 'CashPending');
     store.db.close();
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

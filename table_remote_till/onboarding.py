@@ -6,8 +6,10 @@ from table_remote_till import onboarding_service
 
 
 def _manager():
-	if not set(frappe.get_roles()).intersection({"System Manager", "TRT Manager"}):
-		frappe.throw("Manager role required", frappe.PermissionError)
+	# Onboarding enumerates companies and creates branches, accounts, and outlets.
+	# It is a site-level operation rather than an assigned-branch operation.
+	if "System Manager" not in frappe.get_roles():
+		frappe.throw("System Manager role required for site onboarding", frappe.PermissionError)
 
 
 @frappe.whitelist()

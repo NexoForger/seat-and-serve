@@ -11,7 +11,7 @@ from collections import Counter, defaultdict
 from decimal import Decimal, InvalidOperation
 
 import frappe
-from frappe.utils import today
+from frappe.utils import getdate, today
 from openpyxl import load_workbook
 
 
@@ -74,8 +74,10 @@ BIM_ALIASES = {
 
 
 def _manager():
-	if not set(frappe.get_roles()).intersection({"System Manager", "TRT Manager"}):
-		frappe.throw("Manager role required", frappe.PermissionError)
+	# A source export may contain several branches. Until import jobs are bound
+	# to one branch, only a site manager may read or import them through the API.
+	if "System Manager" not in frappe.get_roles():
+		frappe.throw("System Manager role required for cross-branch imports", frappe.PermissionError)
 
 
 @frappe.whitelist(methods=["POST"])
@@ -93,7 +95,7 @@ def new_job(source, record_type, target_price_list=None):
 	job = frappe.get_doc({"doctype": "TRT Import Job", "source": source,
 		"record_type": record_type, "target_price_list": target_price_list,
 		"status": "Uploaded"}).insert(ignore_permissions=True)
-	return {"job": job.name, "import_supported": record_type in MASTER_FIELDS}
+	return {"job": job.name, "import_supported": record_type in MASTER_FIELDS or record_type in HISTORY_TYPES}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -202,7 +204,7 @@ def _source_key(job, row, mapping):
 
 def _inspect(job, mapping):
 	headings, rows = _rows(job)
-	required = ("source_id",) + MASTER_FIELDS.get(job.record_type, ("date", "branch", "amount"))
+	required = ("source_id",) + MASTER_FIELDS.get(job.record_type, ("date", "branch", "amount", "currency"))
 	missing_columns = [field for field in required if mapping.get(field) not in headings]
 	for optional in ("selling_rate", "currency") if job.record_type == "Item" else ():
 		if mapping.get(optional) and mapping[optional] not in headings:
@@ -239,13 +241,23 @@ def _inspect(job, mapping):
 			if mapping.get("currency") and _mapped(row, mapping, "currency") != price_currency:
 				errors.append({"row": index, "error": f"Price currency must be {price_currency}"})
 		amount = Decimal(0)
+		parsed_date = None
 		if job.record_type in HISTORY_TYPES:
 			try:
 				amount = Decimal(_mapped(row, mapping, "amount"))
-			except InvalidOperation:
+				if not amount.is_finite():
+					raise InvalidOperation
+			except (InvalidOperation, ValueError):
 				errors.append({"row": index, "error": "Invalid amount"})
+			try:
+				parsed_date = getdate(_mapped(row, mapping, "date"))
+			except (ValueError, TypeError):
+				errors.append({"row": index, "error": "Invalid date"})
+			currency = _mapped(row, mapping, "currency")
+			if not currency or not frappe.db.exists("Currency", currency):
+				errors.append({"row": index, "error": "Unknown currency"})
 		date = _mapped(row, mapping, "date")
-		period = date[:7] if len(date) >= 7 else "unknown"
+		period = str(parsed_date)[:7] if parsed_date else date[:7] if len(date) >= 7 else "unknown"
 		bucket = totals[(_mapped(row, mapping, "branch") or "unspecified", period)]
 		bucket["count"] += 1
 		bucket["amount"] += amount
@@ -253,7 +265,7 @@ def _inspect(job, mapping):
 		"source": job.source, "record_type": job.record_type, "rows": len(rows),
 		"target_price_list": job.target_price_list,
 		"price_currency": price_currency,
-		"import_supported": job.record_type in MASTER_FIELDS,
+		"import_supported": job.record_type in MASTER_FIELDS or job.record_type in HISTORY_TYPES,
 		"totals": [{"branch": branch, "period": period, "count": value["count"],
 			"amount": str(value["amount"])} for (branch, period), value in sorted(totals.items())],
 		"errors": errors[:100], "error_count": len(errors),
@@ -339,6 +351,70 @@ def import_masters(job_name):
 	return frappe.parse_json(job.report_json)
 
 
+@frappe.whitelist(methods=["POST"])
+def import_history(job_name):
+	"""Import source transactions as immutable, non-posting history records.
+
+	The source export stays attached privately to the job. Historical records do
+	not create new ERPNext invoices or alter current stock and balances.
+	"""
+	_manager()
+	job = frappe.get_doc("TRT Import Job", job_name)
+	if job.record_type not in HISTORY_TYPES or job.status not in ("Validated", "Complete"):
+		frappe.throw("Preview and validate a historical export before import")
+	mapping = frappe.parse_json(job.mapping_json or "{}")
+	rows, report = _inspect(job, mapping)
+	if report["error_count"]:
+		frappe.throw("Resolve preview errors before import")
+	job.status = "Importing"
+	job.save(ignore_permissions=True)
+	counts = Counter()
+	actual = defaultdict(lambda: {"count": 0, "amount": Decimal(0)})
+	issues = []
+	for index, row in enumerate(rows, start=2):
+		key = _source_key(job, row, mapping)
+		payload = json.dumps(row, sort_keys=True, ensure_ascii=False, default=str)
+		branch = _mapped(row, mapping, "branch")
+		date = getdate(_mapped(row, mapping, "date"))
+		currency = _mapped(row, mapping, "currency")
+		amount = Decimal(_mapped(row, mapping, "amount"))
+		frappe.db.savepoint(f"trt_history_{index}")
+		try:
+			previous = frappe.db.get_value("TRT Legacy Record", {"source_key": key},
+				["name", "payload_json", "currency", "source_date"], as_dict=True)
+			if previous:
+				if (previous.payload_json != payload or previous.currency != currency
+					or str(previous.source_date) != str(date)):
+					raise ValueError("Source ID already imported with different transaction data")
+				counts["already_imported"] += 1
+			else:
+				frappe.get_doc({"doctype": "TRT Legacy Record", "source": job.source,
+					"record_type": job.record_type, "source_id": _mapped(row, mapping, "source_id"),
+					"source_key": key, "job": job.name, "source_date": date,
+					"branch": branch, "currency": currency, "amount": float(amount),
+					"payload_json": payload, "status": "Imported"}).insert(ignore_permissions=True)
+				counts["imported"] += 1
+			bucket = actual[(branch, str(date)[:7])]
+			bucket["count"] += 1
+			bucket["amount"] += amount
+		except Exception as error:
+			frappe.db.rollback(save_point=f"trt_history_{index}")
+			counts["failed"] += 1
+			issues.append({"row": index, "source_id": _mapped(row, mapping, "source_id"),
+				"error": str(error)[:500]})
+	expected = {(entry["branch"], entry["period"]): (entry["count"], Decimal(entry["amount"]))
+		for entry in report["totals"]}
+	reconciled = not issues and expected == {
+		key: (value["count"], value["amount"]) for key, value in actual.items()}
+	job.imported_count = counts["imported"]
+	job.error_count = counts["failed"]
+	job.report_json = json.dumps({"counts": dict(counts), "errors": issues[:100],
+		"source_totals": report["totals"], "reconciled": reconciled})
+	job.status = "Complete" if reconciled else "Failed"
+	job.save(ignore_permissions=True)
+	return frappe.parse_json(job.report_json)
+
+
 @frappe.whitelist()
 def source_inventory(source):
 	_manager()
@@ -348,4 +424,4 @@ def source_inventory(source):
 		fields=["name", "record_type", "status", "imported_count", "error_count"])
 	covered = {job.record_type for job in jobs}
 	return {"jobs": jobs, "missing_export_types": [kind for kind in ALL_TYPES if kind not in covered],
-		"historical_import_available": False}
+		"historical_import_available": True}

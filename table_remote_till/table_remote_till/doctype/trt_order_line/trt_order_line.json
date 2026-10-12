@@ -9,6 +9,8 @@
   "item",
   "item_name",
   "qty",
+  "uom",
+  "weighed",
   "rate",
   "amount",
   "modifiers_json",
@@ -36,6 +38,8 @@
    "reqd": 1,
    "default": "1"
   },
+  {"fieldname": "uom", "fieldtype": "Link", "label": "UOM", "options": "UOM", "read_only": 1},
+  {"fieldname": "weighed", "fieldtype": "Check", "label": "Weighed Item", "read_only": 1},
   {
    "fieldname": "rate",
    "fieldtype": "Currency",

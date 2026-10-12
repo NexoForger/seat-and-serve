@@ -1,4 +1,4 @@
-"""Manager-only quick creation of priced, recipe-backed till items."""
+"""Manager-only quick creation of priced till items with optional recipes."""
 import hashlib
 import json
 import math
@@ -29,6 +29,8 @@ def _number(value, label, positive=False):
 
 
 def _recipe(rows):
+	if rows is None or rows == []:
+		return None
 	if not isinstance(rows, list) or not 1 <= len(rows) <= 100:
 		frappe.throw("Add between 1 and 100 ingredients for one sale unit")
 	result = []
@@ -116,11 +118,12 @@ def create_item(outlet, details, request_id):
 			"item_name": name, "item_group": group, "stock_uom": uom,
 			"is_stock_item": 0, "is_sales_item": 1, "is_purchase_item": 0})
 		item.insert(ignore_permissions=True)
-		bom = frappe.get_doc({"doctype": "BOM", "item": item.name, "company": settings.company,
-			"quantity": 1, "is_active": 1, "is_default": 1, "rm_cost_as_per": "Valuation Rate", "items": recipe})
-		bom.insert(ignore_permissions=True)
-		bom.flags.ignore_permissions = True
-		bom.submit()
+		if recipe:
+			bom = frappe.get_doc({"doctype": "BOM", "item": item.name, "company": settings.company,
+				"quantity": 1, "is_active": 1, "is_default": 1, "rm_cost_as_per": "Valuation Rate", "items": recipe})
+			bom.insert(ignore_permissions=True)
+			bom.flags.ignore_permissions = True
+			bom.submit()
 		frappe.get_doc({"doctype": "Item Price", "item_code": item.name, "price_list": settings.price_list,
 			"selling": 1, "price_list_rate": rate, "valid_from": today()}).insert(ignore_permissions=True)
 		menu = frappe.get_doc("TRT Menu", menu_name) if menu_name else frappe.get_doc({

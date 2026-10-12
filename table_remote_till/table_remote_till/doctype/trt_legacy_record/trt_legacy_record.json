@@ -17,7 +17,9 @@
   "frappe_name",
   "source_date",
   "branch",
+  "currency",
   "amount",
+  "payload_json",
   "status",
   "error"
  ],
@@ -78,6 +80,19 @@
    "fieldname": "amount",
    "fieldtype": "Currency",
    "label": "Amount"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Source Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "payload_json",
+   "fieldtype": "Code",
+   "label": "Source Transaction JSON",
+   "options": "JSON",
+   "read_only": 1
   },
   {
    "fieldname": "status",

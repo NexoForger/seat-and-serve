@@ -1,6 +1,6 @@
 frappe.ui.form.on('TRT Import Job', {
   refresh(frm) {
-    frm.set_intro(__('1. Attach a private CSV/XLSX export. 2. Map column names in Mapping JSON. 3. For item prices, choose a target selling Price List. 4. Preview and resolve errors. 5. Import supported master records. BIM POS exports require mapping review; historical transaction import is not yet available.'));
+    frm.set_intro(__('1. Attach a private CSV/XLSX export. 2. Review column mappings. 3. Preview and resolve errors. 4. Import masters or immutable transaction history. Historical imports preserve source rows and do not post ERPNext accounting entries.'));
     if (frm.is_new()) return;
     frm.add_custom_button(__('Suggest columns'), async () => {
       const result = await frappe.call({ method: 'table_remote_till.migration.suggest_mapping',
@@ -35,6 +35,17 @@ frappe.ui.form.on('TRT Import Job', {
           args: { job_name: frm.doc.name },
         });
         frappe.msgprint(JSON.stringify(result.message));
+        frm.reload_doc();
+      });
+    }
+    if (frm.doc.status === 'Validated' && ['Sale', 'Return', 'Payment', 'Purchase', 'Stock', 'Journal', 'Employee'].includes(frm.doc.record_type)) {
+      frm.add_custom_button(__('Import history'), async () => {
+        const result = await frappe.call({
+          method: 'table_remote_till.migration.import_history',
+          args: { job_name: frm.doc.name },
+        });
+        frappe.msgprint({ title: __('History reconciliation'),
+          message: `<pre>${frappe.utils.escape_html(JSON.stringify(result.message, null, 2))}</pre>`, wide: true });
         frm.reload_doc();
       });
     }

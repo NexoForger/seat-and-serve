@@ -25,6 +25,7 @@ const uom = ref('Nos');
 const menu = ref('');
 const station = ref('');
 const ingredients = ref([{ item: '', qty: 1 }]);
+const trackIngredients = ref(false);
 const requestId = ref(eventId());
 const items = ref<CatalogItem[]>([]);
 const search = ref('');
@@ -55,11 +56,12 @@ async function save() {
     const result = await post<{ item: string; name: string; menu: string }>('items.create_item', {
       outlet: props.outlet, request_id: requestId.value,
       details: { name: name.value.trim(), name_ar: nameAr.value.trim(), price: price.value,
-        group: group.value, uom: uom.value, menu: menu.value, station: station.value, ingredients: ingredients.value },
+        group: group.value, uom: uom.value, menu: menu.value, station: station.value,
+        ingredients: trackIngredients.value ? ingredients.value : [] },
     });
     success.value = text(`${result.name} is ready to sell.`, `${result.name} جاهز للبيع.`);
     requestId.value = eventId();
-    name.value = ''; nameAr.value = ''; price.value = ''; ingredients.value = [{ item: '', qty: 1 }];
+    name.value = ''; nameAr.value = ''; price.value = ''; ingredients.value = [{ item: '', qty: 1 }]; trackIngredients.value = false;
     if (!options.value.menus.some(row => row.name === result.menu)) options.value.menus.push({ name: result.menu, title: text('Till menu', 'قائمة الصندوق') });
     menu.value = result.menu;
     catalogDirty = true;
@@ -94,12 +96,13 @@ onMounted(load);
           <div class="item-manager-pair"><label>{{ text('Selling price', 'سعر البيع') }} · {{ options.currency }}<input v-model="price" type="number" inputmode="decimal" min="0" step="any" required placeholder="0.00" /></label><label>{{ text('Category', 'الفئة') }}<select v-model="group" required><option disabled value="">{{ text('Choose category', 'اختر فئة') }}</option><option v-for="value in options.groups" :key="value">{{ value }}</option></select></label></div>
           <div class="item-manager-pair"><label>{{ text('Sale unit', 'وحدة البيع') }}<select v-model="uom" required><option v-for="value in options.uoms" :key="value">{{ value }}</option></select></label><label>{{ text('Kitchen station', 'محطة المطبخ') }}<select v-model="station"><option value="">{{ text('No kitchen preparation', 'لا يحتاج تحضيراً بالمطبخ') }}</option><option v-for="row in options.stations" :key="row.name" :value="row.name">{{ row.title }}</option></select></label></div>
           <label>{{ text('Menu', 'القائمة') }}<select v-model="menu"><option v-if="!options.menus.length" value="">{{ text('Create a till menu automatically', 'إنشاء قائمة للصندوق تلقائياً') }}</option><option v-for="row in options.menus" :key="row.name" :value="row.name">{{ row.title }}</option></select></label>
-          <section class="item-manager-recipe"><h3>{{ text('Ingredients for one sale unit', 'مكونات وحدة بيع واحدة') }}</h3><p>{{ text('For a packaged product, choose its stock item and enter 1. For prepared food, add each ingredient and its quantity.', 'للمنتج المعبأ اختر مادة المخزون وأدخل ١. للطعام المحضر أضف كل مكون وكميته.') }}</p>
+          <section class="item-manager-recipe"><label class="item-manager-recipe-toggle"><input v-model="trackIngredients" type="checkbox" />{{ text('Track ingredient stock for this item (optional)', 'تتبع مخزون مكونات هذا الصنف (اختياري)') }}</label><template v-if="trackIngredients"><h3>{{ text('Ingredients for one sale unit', 'مكونات وحدة بيع واحدة') }}</h3><p>{{ text('For a packaged product, choose its stock item and enter 1. For prepared food, add each ingredient and its quantity.', 'للمنتج المعبأ اختر مادة المخزون وأدخل ١. للطعام المحضر أضف كل مكون وكميته.') }}</p>
             <p v-if="!options.ingredients.length">{{ text('Create your raw materials first, then refresh this page.', 'أنشئ المواد الأولية أولاً ثم حدّث الصفحة.') }} <a href="/app/item" target="_blank" rel="noopener">{{ text('Manage ingredients', 'إدارة المكونات') }}</a></p>
-            <div v-for="(row, index) in ingredients" :key="index" class="item-manager-ingredient"><label>{{ text('Ingredient', 'المكون') }}<select v-model="row.item" required><option disabled value="">{{ text('Choose ingredient', 'اختر مكوناً') }}</option><option v-for="raw in options.ingredients" :key="raw.name" :value="raw.name">{{ raw.item_name }} · {{ raw.name }}</option></select></label><label>{{ text('Quantity', 'الكمية') }} {{ ingredientUnit(row.item) }}<input v-model.number="row.qty" type="number" min="0.000001" step="any" required /></label><button type="button" :disabled="ingredients.length === 1" :aria-label="text('Remove ingredient', 'حذف المكون')" @click="ingredients.splice(index, 1)">×</button></div>
+            <div v-for="(row, index) in ingredients" :key="index" class="item-manager-ingredient"><label>{{ text('Ingredient', 'المكون') }}<select v-model="row.item" :required="trackIngredients"><option disabled value="">{{ text('Choose ingredient', 'اختر مكوناً') }}</option><option v-for="raw in options.ingredients" :key="raw.name" :value="raw.name">{{ raw.item_name }} · {{ raw.name }}</option></select></label><label>{{ text('Quantity', 'الكمية') }} {{ ingredientUnit(row.item) }}<input v-model.number="row.qty" type="number" min="0.000001" step="any" :required="trackIngredients" /></label><button type="button" :disabled="ingredients.length === 1" :aria-label="text('Remove ingredient', 'حذف المكون')" @click="ingredients.splice(index, 1)">×</button></div>
             <button type="button" :disabled="ingredients.length >= 100" @click="ingredients.push({ item: '', qty: 1 })">+ {{ text('Add ingredient', 'إضافة مكون') }}</button>
+            </template>
           </section>
-          <button class="item-manager-save" type="submit" :disabled="!options.ingredients.length">{{ saving ? text('Saving…', 'جارٍ الحفظ…') : text('Save & add to menu', 'حفظ وإضافة إلى القائمة') }}</button>
+          <button class="item-manager-save" type="submit" :disabled="trackIngredients && !options.ingredients.length">{{ saving ? text('Saving…', 'جارٍ الحفظ…') : text('Save & add to menu', 'حفظ وإضافة إلى القائمة') }}</button>
         </fieldset>
       </form>
       <section class="item-manager-card item-manager-list"><h2>{{ text('On your till menu', 'على قائمة الصندوق') }} <small>{{ items.length }}</small></h2><input v-model="search" type="search" :aria-label="text('Search menu items', 'بحث في أصناف القائمة')" :placeholder="text('Search items…', 'ابحث عن صنف…')" /><p v-if="!visibleItems.length">{{ text('No matching items.', 'لا توجد أصناف مطابقة.') }}</p><article v-for="item in visibleItems" :key="item.item + item.category"><div><strong>{{ language === 'ar' ? item.name_ar || item.name_en : item.name_en }}</strong><small>{{ item.category }}</small></div><span>{{ money(item.rate, options.currency, language) }}</span></article></section>
@@ -123,6 +126,8 @@ onMounted(load);
 .item-manager input, .item-manager select { width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 10px 12px; border: 1px solid #c8cdbe; border-radius: 8px; background: #fff; color: #20261e; font: inherit; }
 .item-manager-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .item-manager-recipe { margin: 10px 0 24px; border-top: 1px solid #e1e4d9; padding-top: 8px; }
+.item-manager .item-manager-recipe-toggle { display: flex; align-items: center; gap: 10px; }
+.item-manager .item-manager-recipe-toggle input { width: 18px; min-height: 18px; margin: 0; }
 .item-manager-recipe p { font-size: 13px; line-height: 1.6; color: #5b6355; }
 .item-manager-ingredient { display: grid; grid-template-columns: minmax(0, 1fr) 100px 40px; align-items: center; gap: 10px; }
 .item-manager-ingredient button { padding: 8px; }

@@ -51,6 +51,7 @@ export const eventId = () => {
 
 export type CatalogItem = {
   item: string; name_en: string; name_ar?: string; category?: string; rate: number; station?: string;
+  uom?: string; weighed?: boolean;
   deal_kind?: 'Combo' | 'Offer'; deal_description?: string;
   modifier_group?: ModifierGroup | null;
 };
@@ -74,6 +75,7 @@ export type Outlet = {
 };
 export type OrderLine = {
   name: string; item: string; item_name: string; qty: number; rate: number; amount: number; station?: string;
+  uom?: string; weighed?: boolean;
   note?: string; modifiers?: ModifierOption[];
 };
 export type Order = {

@@ -12,6 +12,7 @@
   "company",
   "branch",
   "warehouse",
+  "damaged_return_warehouse",
   "pos_profile",
   "price_list",
   "walk_in_customer",
@@ -62,6 +63,7 @@
    "label": "Warehouse",
    "options": "Warehouse"
   },
+  {"fieldname": "damaged_return_warehouse", "fieldtype": "Link", "label": "Damaged Return Warehouse", "options": "Warehouse", "description": "Quarantine stock returned as damaged; use a non-selling warehouse in this company."},
   {
    "fieldname": "pos_profile",
    "fieldtype": "Link",

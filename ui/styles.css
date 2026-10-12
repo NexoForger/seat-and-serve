@@ -83,6 +83,8 @@ h1 { font-size: clamp(27px, 3vw, 36px); font-weight: 750; line-height: 1.2; lett
 .line { display: flex; justify-content: space-between; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .line:first-child { padding-top: 0; }
 .line strong { font-weight: 550; line-height: 1.5; }
+.weighed-quantity { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 11px; }
+.weighed-quantity input { width: 90px; min-height: 34px; padding: 4px 7px; border: 1px solid var(--line); border-radius: 5px; font: inherit; }
 .line > strong { white-space: nowrap; }
 .quantity-control { display: inline-flex; align-items: center; margin-top: 8px; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
 .quantity-control button { background: #f7f8f2; border: 0; color: var(--ink); min-width: 44px; height: 44px; font-size: 18px; }

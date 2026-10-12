@@ -142,7 +142,8 @@ const importMessage=document.querySelector('#import-message');
 function showImport(text,type=''){importMessage.textContent=text;importMessage.className=type}
 function updateImportGuidance(){const source=document.querySelector('#source').value,type=document.querySelector('#record-type').value;
   document.querySelector('#import-price-list-field').hidden=type!=='Item';
-  document.querySelector('#source-guidance').textContent=source==='BIM POS'?'For a BIM POS client, request separate Back Office exports for products, customers and suppliers. Product versions differ, so review the suggested columns and map the actual export before importing. Prices need a target selling list in the same currency as the export. Sales and other historical records can be previewed for reconciliation, but are not posted as ERPNext transactions.':''}
+  document.querySelector('#import-masters').textContent=['Item','Customer','Supplier'].includes(type)?'Import masters':'Import immutable history';
+  document.querySelector('#source-guidance').textContent=source==='BIM POS'?'For a BIM POS client, request separate Back Office exports for each record type. Review the suggested columns against the actual export. Prices need a target selling list in the same currency as the export. Historical rows are preserved and reconciled, without posting ERPNext accounting or stock entries.':''}
 updateImportGuidance();
 for(const id of ['source','record-type','import-price-list','export-file'])document.querySelector('#'+id).addEventListener('change',()=>{
   updateImportGuidance();
@@ -164,7 +165,7 @@ document.querySelector('#upload-export').addEventListener('click',async()=>{
     const uploaded=await response.json();if(!response.ok||uploaded.exc||!uploaded.message?.name)throw new Error('Private upload failed; open the import job to retry.');
     await migrationApi('attach_export',{job_name:importJob,file_name:uploaded.message.name},true);
     const suggested=await migrationApi('suggest_mapping',{job_name:importJob});importColumns=suggested.columns;
-    const fields=fieldsByType[recordType]||['source_id','date','branch','amount'];const box=document.querySelector('#mapping-fields');box.replaceChildren();
+    const fields=fieldsByType[recordType]||['source_id','date','branch','amount','currency'];const box=document.querySelector('#mapping-fields');box.replaceChildren();
     for(const field of fields){const label=document.createElement('label'),select=document.createElement('select');label.textContent=field.replaceAll('_',' ');select.dataset.field=field;
       select.add(new Option('Unmapped',''));for(const column of importColumns)select.add(new Option(column,column));select.value=suggested.mapping[field]||'';label.append(select);box.append(label)}
     document.querySelector('#mapping').hidden=false;document.querySelector('#import-masters').disabled=true;document.querySelector('#import-report').replaceChildren();showImport('Review column mappings, then preview.','success');
@@ -173,13 +174,13 @@ document.querySelector('#mapping-fields').addEventListener('change',()=>{documen
 document.querySelector('#preview-import').addEventListener('click',async()=>{if(!importJob)return;showImport('Checking export…');try{
   const mapping={};for(const select of document.querySelectorAll('#mapping-fields select'))if(select.value)mapping[select.dataset.field]=select.value;
   const report=await migrationApi('preview',{job_name:importJob,mapping_json:JSON.stringify(mapping)},true);
-  const box=document.querySelector('#import-report');box.replaceChildren();const p=document.createElement('p');p.textContent=`${report.rows} rows · ${report.error_count} errors · ${report.import_supported?'master import available':'historical import pending reconciliation'}`;box.append(p);
+  const box=document.querySelector('#import-report');box.replaceChildren();const p=document.createElement('p');p.textContent=`${report.rows} rows · ${report.error_count} errors · ${report.import_supported?'import available':'import unavailable'}`;box.append(p);
   const list=document.createElement('ul');for(const total of report.totals){const li=document.createElement('li');li.textContent=`${total.branch} · ${total.period} · ${total.count} records · ${total.amount}`;list.append(li)}box.append(list);
   for(const issue of report.errors.slice(0,10)){const q=document.createElement('p');q.className='error';q.textContent=`Row ${issue.row}: ${issue.error}`;box.append(q)}
   document.querySelector('#import-masters').disabled=!!report.error_count||!importSupported;showImport('Preview complete.','success');
 }catch(error){showImport(error.message,'error')}});
-document.querySelector('#import-masters').addEventListener('click',async()=>{if(!importJob||!importSupported)return;document.querySelector('#import-masters').disabled=true;showImport('Importing master records…');try{
-  const result=await migrationApi('import_masters',{job_name:importJob},true);showImport(`Import finished: ${result.counts.imported||0} imported, ${result.counts.failed||0} failed. Open the job for details.`,'success');refresh();
+document.querySelector('#import-masters').addEventListener('click',async()=>{if(!importJob||!importSupported)return;document.querySelector('#import-masters').disabled=true;const masters=['Item','Customer','Supplier'].includes(document.querySelector('#record-type').value);showImport(masters?'Importing master records…':'Archiving and reconciling historical records…');try{
+  const result=await migrationApi(masters?'import_masters':'import_history',{job_name:importJob},true);showImport(`Import finished: ${result.counts.imported||0} imported, ${result.counts.failed||0} failed${masters?'':`, reconciled: ${result.reconciled?'yes':'no'}`}. Open the job for details.`,'success');refresh();
 }catch(error){showImport(error.message,'error')}});
 loadOptions();
 </script></body></html>

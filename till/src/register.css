@@ -133,6 +133,8 @@
 .register-bill-context span { color: #c3cbbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .register-total { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 5px; padding: 0 14px; color: #171917; background: var(--register-accent); font-size: 21px; }
 .register-total strong { font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.register-weighed-qty { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 11px; }
+.register-weighed-qty input { width: 90px; min-height: 34px; padding: 4px 7px; border: 1px solid #8b9982; border-radius: 5px; font: inherit; }
 .register-breakdown { display: flex; justify-content: space-between; gap: 7px; flex-wrap: wrap; padding: 10px 13px; font-size: 10px; color: #dedede; }
 .register-savings { display: grid; gap: 4px; padding: 0 13px 10px; color: #e8f574; font-size: 11px; }
 .register-savings strong { padding-top: 4px; border-top: 1px solid #616b56; font-size: 12px; }
@@ -168,6 +170,10 @@
 .register-add-tender,
 .register-confirm-payment { min-height: 42px; color: #fff; background: #5b5b5b; border: 1px solid #888; font-size: 11px; }
 .register-confirm-payment { color: #171917; background: var(--register-accent); border: 0; font-weight: 700; }
+.register-return { display: grid; gap: 8px; padding: 12px; border: 1px solid #777; }
+.register-return h3 { margin: 0; font-size: 14px; }
+.register-return label { display: grid; gap: 4px; font-size: 12px; }
+.register-return input, .register-return select { min-height: 36px; width: 100%; }
 .register-invoice { margin: 0; padding: 10px 13px; background: #3c5224; font-size: 11px; }
 .register-invoice button { display: block; margin-top: 8px; padding: 7px 10px; border: 1px solid #d9e8aa; border-radius: 5px; color: #f7ffe5; background: #27391d; cursor: pointer; }
 .register-invoice button:disabled { opacity: .6; cursor: default; }

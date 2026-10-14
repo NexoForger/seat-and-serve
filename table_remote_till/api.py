@@ -258,18 +258,27 @@ def _sale_quantity(item_code, value, allow_zero=False):
 	return float(qty), uom, weighed
 
 
+def _line_uom_info(line):
+	"""Read saved UOM metadata, with a fallback for sites awaiting DocType migration."""
+	uom = line.get("uom") or frappe.db.get_value("Item", line.item, "stock_uom")
+	weighed = line.get("weighed")
+	if weighed is None:
+		weighed = bool(uom and not frappe.db.get_value("UOM", uom, "must_be_whole_number"))
+	return uom, bool(weighed)
+
+
 def _snapshot(order):
 	data = {key: order.get(key) for key in ORDER_FIELDS}
-	data["lines"] = [
-		{
+	data["lines"] = []
+	for line in order.lines:
+		uom, weighed = _line_uom_info(line)
+		data["lines"].append({
 			"name": line.name, "item": line.item, "item_name": line.item_name,
 			"qty": line.qty, "rate": line.rate, "amount": line.amount,
-			"uom": line.uom, "weighed": bool(line.weighed),
+			"uom": uom, "weighed": weighed,
 			"station": line.station, "note": line.note,
 			"modifiers": frappe.parse_json(line.modifiers_json) if line.modifiers_json else [],
-		}
-		for line in order.lines
-	]
+		})
 	data["bill"] = _bill_snapshot(order)
 	return data
 

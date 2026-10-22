@@ -23,6 +23,9 @@ async function request<T>(method: string, args: Record<string, unknown>, write =
   });
   const data = await response.json().catch(() => ({})) as ApiResult<T> & { _server_messages?: string };
   if (!response.ok || data.exc) {
+    if (method !== 'pin_auth.state' && [401, 403].includes(response.status)) {
+      window.dispatchEvent(new Event('trt-auth-check'));
+    }
     let detail = `Request failed (${response.status})`;
     if (data._server_messages) {
       try { detail = JSON.parse(data._server_messages).map((line: string) => JSON.parse(line).message).join('\n'); }

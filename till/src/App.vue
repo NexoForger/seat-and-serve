@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { eventId, get, post, type CatalogItem, type Order, type Outlet, type RegisterTable, type RegisterTableOrder, type Reservation } from '../../ui/client';
 import '../../ui/styles.css';
 import './register.css';
+defineProps<{ pinSession?: boolean }>();
 import Icon from '../../ui/Icon.vue';
 import Feedback from '../../ui/Feedback.vue';
 import ModifierPicker from '../../ui/ModifierPicker.vue';
@@ -788,8 +789,8 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
       <div class="register-name"><strong>S&S</strong><small>{{ text('Seat & Serve · Waiter register', 'سيت آند سيرف · صندوق النادل') }}</small></div>
       <select v-model="outlet" :disabled="busy || loading || !!order?.lines.length" :aria-label="text('Outlet', 'الفرع')"><option v-for="place in outlets" :key="place.name" :value="place.name">{{ place.title }}</option></select>
       <Transition name="register-drop"><div v-if="showTools" class="register-tools">
-        <a href="/kitchen">{{ text('Kitchen display', 'شاشة المطبخ') }}</a>
-        <a href="/app">{{ text('Manager Desk', 'لوحة الإدارة') }}</a>
+        <a v-if="!pinSession" href="/kitchen">{{ text('Kitchen display', 'شاشة المطبخ') }}</a>
+        <a v-if="!pinSession" href="/app">{{ text('Manager Desk', 'لوحة الإدارة') }}</a>
         <a v-if="canManageDiscount" href="#items" @click="showTools = false">{{ text('Add items / Manage menu', 'إضافة أصناف / إدارة القائمة') }}</a>
         <button v-if="selectedOutlet?.enable_tables" type="button" @click="openReservations">{{ text('Reservations', 'الحجوزات') }}</button>
         <a v-if="selectedOutlet?.enable_tables" :href="'/reservations?outlet=' + encodeURIComponent(outlet)" target="_blank" rel="noopener">{{ text('Guest reservation page', 'صفحة حجز الضيوف') }}</a>

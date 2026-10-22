@@ -283,3 +283,8 @@ extend_doctype_class = {
 # ignore_translatable_strings_from = []
 
 website_route_rules = [{'from_route': '/menu/<path:app_path>', 'to_route': 'menu'}, {'from_route': '/kiosk/<path:app_path>', 'to_route': 'kiosk'}, {'from_route': '/kitchen/<path:app_path>', 'to_route': 'kitchen'}, {'from_route': '/till/<path:app_path>', 'to_route': 'till'},]
+
+# PIN logins use normal CSRF-protected cookies, restricted to Till routes and APIs.
+before_request = ["table_remote_till.pin_auth.before_request"]
+on_session_creation = "table_remote_till.pin_auth.on_session_creation"
+doctype_js["TRT Staff Assignment"] = ["public/js/trt_staff_pin.js", "public/js/trt_form_titles.js"]

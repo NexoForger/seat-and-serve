@@ -13,7 +13,11 @@
   "allow_till",
   "allow_kitchen",
   "allow_manager",
-  "enabled"
+  "enabled",
+  "till_pin_section",
+  "till_login_code",
+  "till_pin_enabled",
+  "till_pin_revision"
  ],
  "fields": [
   {
@@ -52,6 +56,33 @@
    "fieldtype": "Check",
    "label": "Enabled",
    "default": "1"
+  },
+  {
+   "fieldname": "till_pin_section",
+   "fieldtype": "Section Break",
+   "label": "Till PIN access"
+  },
+  {
+   "fieldname": "till_login_code",
+   "fieldtype": "Data",
+   "label": "Till staff code",
+   "unique": 1,
+   "read_only": 1,
+   "description": "Set or change using the Set Till PIN button."
+  },
+  {
+   "fieldname": "till_pin_enabled",
+   "fieldtype": "Check",
+   "label": "Till PIN enabled",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "till_pin_revision",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "read_only": 1,
+   "label": "PIN revision"
   }
  ],
  "permissions": [

@@ -51,12 +51,16 @@ def _payload(value):
 
 
 def _staff(allowed=STAFF_ROLES):
-	if frappe.session.user == "Guest" or not set(frappe.get_roles()).intersection(allowed):
+	from table_remote_till.pin_auth import effective_roles
+	if frappe.session.user == "Guest" or not effective_roles().intersection(allowed):
 		frappe.throw("POS role required", frappe.PermissionError)
 
 
 def _staff_outlet(outlet, ability="allow_till"):
+	from table_remote_till.pin_auth import check_outlet
 	_staff(KITCHEN_ROLES if ability == "allow_kitchen" else STAFF_ROLES)
+	if check_outlet(outlet, ability):
+		return
 	if "System Manager" in frappe.get_roles():
 		return
 	if not frappe.db.exists("TRT Staff Assignment", {"user": frappe.session.user,
@@ -483,13 +487,22 @@ def _release_kitchen(order):
 
 @frappe.whitelist()
 def bootstrap():
+	from table_remote_till.pin_auth import _scope, _assignment, effective_roles
 	_staff(KITCHEN_ROLES)
 	allowed = None if "System Manager" in frappe.get_roles() else frappe.get_all(
 		"TRT Staff Assignment", filters={"user": frappe.session.user, "enabled": 1},
 		pluck="outlet")
+	roles = list(effective_roles())
+	if _scope() is not None:
+		row = _assignment(_scope())
+		if not row:
+			frappe.throw("Till PIN session expired", frappe.AuthenticationError)
+		allowed = [row.outlet]
+		if not row.allow_manager:
+			roles = [role for role in roles if role not in ("System Manager", "TRT Manager")]
 	return {
 		"user": frappe.session.user,
-		"roles": frappe.get_roles(),
+		"roles": roles,
 		"outlets": frappe.get_all(
 			"TRT Outlet", filters={"enabled": 1, **({"name": ["in", allowed]} if allowed is not None else {})},
 			fields=["name", "title", "company", "base_currency", "cash_currency", "enable_tables", "enable_tabs", "enable_takeaway", "enable_retail"],

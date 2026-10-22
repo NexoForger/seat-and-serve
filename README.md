@@ -157,3 +157,7 @@ This app is its own Git repository inside the local bench. The outer Docker repo
 ## Add Items barcode scanning
 
 Add Items accepts optional barcodes from USB/wireless keyboard scanners, a phone camera, or a paired phone through the remote ERP. Scanning never saves an item automatically. See [barcode scanner setup and rollout checks](docs/barcode-scanning.md). Camera scanning requires HTTPS. A PC USB/dongle scanner can also relay barcodes into Add Items on a phone over HTTP using **Pair PC scanner**.
+
+## Till staff PIN sign-in
+
+Staff can open `/till` without an ERPNext login and unlock it using a staff code and PIN. A System Manager configures PINs on **TRT Staff Assignment**. PIN sessions are restricted to Till and the assigned outlet; Desk still uses the normal ERP login. **Run site migration and restart workers after updating.** See [PIN setup and staff sign-in](docs/till-pin-login.md).

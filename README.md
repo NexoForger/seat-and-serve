@@ -153,3 +153,7 @@ Staff APIs validate their outlet access on the server. TRT Manager Desk lists an
 ## Repository boundaries
 
 This app is its own Git repository inside the local bench. The outer Docker repository ignores `development/`; commit and publish the app repository separately. The preexisting Kotlin starter is outside this Frappe implementation.
+
+## Add Items barcode scanning
+
+Add Items accepts optional barcodes from USB/wireless keyboard scanners, a phone camera, or a paired phone through the remote ERP. Scanning never saves an item automatically. See [barcode scanner setup and rollout checks](docs/barcode-scanning.md). Camera scanning requires HTTPS.

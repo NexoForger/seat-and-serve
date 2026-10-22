@@ -71,6 +71,39 @@ def item_options(outlet):
 	}
 
 
+def _barcode(value):
+	from table_remote_till.barcode_values import normalize
+	try:
+		return normalize(value)
+	except ValueError as error:
+		frappe.throw(str(error))
+
+
+@frappe.whitelist()
+def barcode_available(outlet, barcode, request_id=None):
+	_manager(outlet)
+	code = _barcode(barcode)
+	item = frappe.db.get_value("Item Barcode", {"barcode": code}, "parent") if code else None
+	# A response lost after commit must still be retryable with the original request.
+	if item and request_id:
+		try:
+			request_id = str(uuid.UUID(request_id))
+		except (ValueError, TypeError, AttributeError):
+			frappe.throw("Invalid save request")
+		event = frappe.db.get_value("TRT Sync Event", {"event_id": request_id},
+			["outlet", "event_type", "payload_json"], as_dict=True)
+		if event and event.outlet == outlet and event.event_type == "create_item":
+			stored = frappe.parse_json(event.payload_json)
+			if stored.get("result", {}).get("item") == item:
+				return {"available": True}
+	result = {"available": not bool(item)}
+	if item:
+		menus = frappe.get_all("TRT Menu", filters={"outlet": outlet}, pluck="name")
+		if menus and frappe.db.exists("TRT Menu Entry", {"parent": ["in", menus], "item": item}):
+			result["item_name"] = frappe.db.get_value("Item", item, "item_name")
+	return result
+
+
 @frappe.whitelist(methods=["POST"])
 def create_item(outlet, details, request_id):
 	settings = _manager(outlet)
@@ -113,11 +146,26 @@ def create_item(outlet, details, request_id):
 		"selling": 1, "currency": settings.base_currency}):
 		frappe.throw("Configure an enabled selling price list in the outlet currency")
 	recipe = _recipe(details.get("ingredients"))
+	barcode = _barcode(details.get("barcode"))
+	if barcode and frappe.db.exists("Item Barcode", {"barcode": barcode}):
+		frappe.throw("This barcode is already assigned to an item")
 	with _as_admin():
 		item = frappe.get_doc({"doctype": "Item", "item_code": "TRT-" + request_id,
 			"item_name": name, "item_group": group, "stock_uom": uom,
 			"is_stock_item": 0, "is_sales_item": 1, "is_purchase_item": 0})
-		item.insert(ignore_permissions=True)
+		if barcode:
+			item.append("barcodes", {"barcode": barcode, "uom": uom})
+		try:
+			item.insert(ignore_permissions=True)
+		except (frappe.UniqueValidationError, frappe.DuplicateEntryError):
+			frappe.clear_messages()
+			frappe.throw("Item or barcode already exists. Refresh and check the barcode before saving again.")
+		except frappe.ValidationError:
+			# ERPNext may detect a competing barcode during Item validation.
+			if not barcode or not frappe.db.exists("Item Barcode", {"barcode": barcode}):
+				raise
+			frappe.clear_messages()
+			frappe.throw("This barcode is already assigned to an item")
 		if recipe:
 			bom = frappe.get_doc({"doctype": "BOM", "item": item.name, "company": settings.company,
 				"quantity": 1, "is_active": 1, "is_default": 1, "rm_cost_as_per": "Valuation Rate", "items": recipe})

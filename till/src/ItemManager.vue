@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { eventId, get, post, type CatalogItem } from '../../ui/client';
 import { money } from '../../ui/format';
 import Feedback from '../../ui/Feedback.vue';
+import BarcodeField from './BarcodeField.vue';
 
 const props = defineProps<{ outlet: string; outletTitle: string; language: 'en' | 'ar' }>();
 const emit = defineEmits<{ saved: [] }>();
@@ -15,9 +16,12 @@ type Options = {
 const options = ref<Options | null>(null);
 const loading = ref(true);
 const saving = ref(false);
+const preparing = ref(false);
 const error = ref('');
 const success = ref('');
 const name = ref('');
+const barcode = ref('');
+const barcodeField = ref<InstanceType<typeof BarcodeField> | null>(null);
 const nameAr = ref('');
 const price = ref<number | ''>('');
 const group = ref('');
@@ -50,12 +54,15 @@ async function load() {
   finally { loading.value = false; }
 }
 async function save() {
-  if (saving.value || !options.value) return;
+  if (saving.value || preparing.value || !options.value) return;
+  preparing.value = true;
+  try { if (!await barcodeField.value?.prepareSave()) return; }
+  finally { preparing.value = false; }
   saving.value = true; error.value = ''; success.value = '';
   try {
     const result = await post<{ item: string; name: string; menu: string }>('items.create_item', {
       outlet: props.outlet, request_id: requestId.value,
-      details: { name: name.value.trim(), name_ar: nameAr.value.trim(), price: price.value,
+      details: { barcode: barcode.value, name: name.value.trim(), name_ar: nameAr.value.trim(), price: price.value,
         group: group.value, uom: uom.value, menu: menu.value, station: station.value,
         ingredients: trackIngredients.value ? ingredients.value : [] },
     });
@@ -64,15 +71,16 @@ async function save() {
     name.value = ''; nameAr.value = ''; price.value = ''; ingredients.value = [{ item: '', qty: 1 }]; trackIngredients.value = false;
     if (!options.value.menus.some(row => row.name === result.menu)) options.value.menus.push({ name: result.menu, title: text('Till menu', 'قائمة الصندوق') });
     menu.value = result.menu;
+    await barcodeField.value?.reset();
     catalogDirty = true;
     emit('saved');
     await refreshItems();
   } catch (cause) { error.value = String(cause); }
-  finally { saving.value = false; }
+  finally { saving.value = false; await barcodeField.value?.resume(); barcodeField.value?.focus(); }
 }
 function back() {
-  if (saving.value) return;
-  if (name.value.trim() && !window.confirm(text('Leave without saving this item?', 'مغادرة دون حفظ الصنف؟'))) return;
+  if (saving.value || preparing.value) return;
+  if ((name.value.trim() || barcode.value) && !window.confirm(text('Leave without saving this item?', 'مغادرة دون حفظ الصنف؟'))) return;
   if (catalogDirty) emit('saved');
   window.location.hash = '';
 }
@@ -91,6 +99,7 @@ onMounted(load);
       <form class="item-manager-card" @submit.prevent="save">
         <fieldset :disabled="saving">
           <h2>{{ text('New item', 'صنف جديد') }}</h2>
+          <BarcodeField ref="barcodeField" v-model="barcode" :request-id="requestId" :outlet="outlet" :language="language" :disabled="saving" />
           <label>{{ text('Item name', 'اسم الصنف') }}<input v-model="name" required maxlength="140" :placeholder="text('e.g. Chicken sandwich', 'مثلاً: سندويش دجاج')" /></label>
           <label>{{ text('Arabic name (optional)', 'الاسم بالعربية (اختياري)') }}<input v-model="nameAr" maxlength="140" dir="rtl" /></label>
           <div class="item-manager-pair"><label>{{ text('Selling price', 'سعر البيع') }} · {{ options.currency }}<input v-model="price" type="number" inputmode="decimal" min="0" step="any" required placeholder="0.00" /></label><label>{{ text('Category', 'الفئة') }}<select v-model="group" required><option disabled value="">{{ text('Choose category', 'اختر فئة') }}</option><option v-for="value in options.groups" :key="value">{{ value }}</option></select></label></div>

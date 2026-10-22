@@ -45,7 +45,7 @@ Assign one accountable owner for each item before the opening manager starts:
 3. **Products and stock:** create real ERPNext Items, UOMs, groups, selling Item Prices, tax templates, stock settings, and approved recipes/BOMs. Sample items are training data, not live inventory.
 4. **Service design:** list outlets, branches, service areas, tables and seat counts, kitchen stations, sales channels, menu categories, modifiers, and who can approve discounts/returns.
 5. **People and access:** create named Frappe Users; assign the least access needed, outlet staff assignments, and a manager who can resolve exceptions. Never share Administrator credentials.
-6. **Equipment and network:** identify each register and tablet, test local Wi-Fi coverage, power, and browser screen size. Ethernet receipt printers require a reachable `escpos_tcp` TRT Device and a real test print; other device records do not mean a hardware driver is implemented.
+6. **Equipment and network:** identify each register and tablet, test local Wi-Fi coverage, power, and browser screen size. Receipt printers use an `escpos_tcp` (LAN) or `escpos_usb` (USB) TRT Device. For remote ERP hosting, configure the outbound PC/Pi print agent. Use the device's print and drawer tests to verify physical output; see [printer setup](receipt-printers.md).
 7. **Opening data:** decide which master records to migrate. Keep original exports and an import/reconciliation log. Historical sales/payments are previewable but not imported as transactions by this version.
 
 ## 3. First setup: guided onboarding

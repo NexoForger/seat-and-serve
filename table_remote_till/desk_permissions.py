@@ -7,7 +7,7 @@ import frappe
 
 DIRECT_OUTLET = {
 	"TRT Device", "TRT FX Rate", "TRT Kitchen Station", "TRT Menu", "TRT Onboarding Run",
-	"TRT Order", "TRT Promotion", "TRT Register", "TRT Reservation", "TRT Service Area",
+	"TRT Order", "TRT Print Job", "TRT Promotion", "TRT Register", "TRT Reservation", "TRT Service Area",
 	"TRT Staff Assignment", "TRT Sync Event", "TRT Table",
 }
 VIA_ORDER = {"TRT Kitchen Ticket", "TRT Payment Attempt", "TRT Promotion Redemption"}
@@ -18,7 +18,7 @@ GLOBAL_MANAGER_BLOCKED = {
 SCOPED = DIRECT_OUTLET | VIA_ORDER | GLOBAL_MANAGER_BLOCKED | {"TRT Outlet"}
 MANAGER_READ_ONLY = {
 	"TRT FX Rate", "TRT Kitchen Ticket", "TRT Order", "TRT Payment Attempt",
-	"TRT Promotion Redemption", "TRT Staff Assignment", "TRT Sync Event",
+	"TRT Print Job", "TRT Promotion Redemption", "TRT Staff Assignment", "TRT Sync Event",
 }
 
 

@@ -617,16 +617,35 @@ async function checkout() {
     }];
     order.value = await post<Order>('cash_checkout', { order_name: order.value.name,
       tenders: chosen, event_id: eventId(), expected_revision: order.value.revision });
+    const hardwareWarnings: string[] = [];
     setNotice(text(`Paid · POS Invoice ${order.value.pos_invoice}`, 'تم الدفع وتسجيل فاتورة نقطة البيع'), 'success');
     if (options.value?.receipt_printer_available) {
       try {
-        await post('print_receipt', { order_name: order.value.name });
-        setNotice(text(`Paid · Receipt printed · ${order.value.pos_invoice}`, 'تم الدفع وطباعة الإيصال'), 'success');
+        const receipt = await post<{ status: string }>('print_receipt', { order_name: order.value.name });
+        setNotice(receipt.status === 'Pending'
+          ? text('Paid · Receipt queued for the printer PC/Pi', 'تم الدفع وإضافة الإيصال إلى قائمة جهاز الطابعة')
+          : text(`Paid · Receipt sent · ${order.value.pos_invoice}`, 'تم الدفع وإرسال الإيصال للطابعة'), 'success');
       } catch (printError) {
-        setNotice(text(`Payment saved. Receipt did not print: ${String(printError)}`,
-          `تم حفظ الدفع. تعذرت طباعة الإيصال: ${String(printError)}`), 'warning');
+        hardwareWarnings.push(text(`Receipt did not print: ${String(printError)}`,
+          `تعذرت طباعة الإيصال: ${String(printError)}`));
       }
     }
+    try {
+      const drawer = await get<{ status: string; delivery?: string; agent?: boolean }>('printer_api.drawer_status', { order_name: order.value.name });
+      if (drawer.status === 'Conflict' || drawer.status === 'Pending') {
+        hardwareWarnings.push(drawer.agent && drawer.status === 'Pending'
+          ? text('Cash drawer command is waiting for the printer PC/Pi. Check the drawer.', 'أمر فتح الدرج ينتظر جهاز الطابعة. تحقق من الدرج.')
+          : text('Cash drawer opening is unconfirmed. Check the drawer; ask a manager if it is closed.',
+          'فتح درج النقود غير مؤكد. تحقق من الدرج واطلب مساعدة المدير إذا كان مغلقاً.'));
+      } else if (drawer.delivery === 'Queued') {
+        hardwareWarnings.push(text('Drawer pulse queued over USB. Check the drawer; the queue may process it later.',
+          'أُضيف أمر فتح الدرج إلى قائمة USB. تحقق من الدرج، فقد ينفذ الأمر لاحقاً.'));
+      }
+    } catch {
+      hardwareWarnings.push(text('Could not check the cash drawer result. Verify it at the register.',
+        'تعذر التحقق من نتيجة درج النقود. تحقق منه عند الصندوق.'));
+    }
+    if (hardwareWarnings.length) setNotice(text('Payment saved. ', 'تم حفظ الدفع. ') + hardwareWarnings.join(' '), 'warning');
     options.value = await get('checkout_options', { outlet: outlet.value });
     if (channel.value === 'Table') await loadTables();
   } catch (error) { setNotice(String(error), 'error'); }
@@ -637,8 +656,10 @@ async function printReceipt() {
   if (!order.value?.pos_invoice || busy.value) return;
   busy.value = true;
   try {
-    await post('print_receipt', { order_name: order.value.name, copy: true });
-    setNotice(text('Receipt printed.', 'تمت طباعة الإيصال.'), 'success');
+    const receipt = await post<{ status: string }>('print_receipt', { order_name: order.value.name, copy: true });
+    setNotice(receipt.status === 'Pending'
+      ? text('Receipt queued for the printer PC/Pi.', 'أُضيف الإيصال إلى قائمة جهاز الطابعة.')
+      : text('Receipt sent. Check the printer.', 'أُرسل الإيصال. تحقق من الطابعة.'), 'success');
   } catch (error) { setNotice(String(error), 'error'); }
   finally { busy.value = false; }
 }

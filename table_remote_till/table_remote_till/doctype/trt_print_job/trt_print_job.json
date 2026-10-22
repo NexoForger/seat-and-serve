@@ -1,0 +1,163 @@
+{
+ "doctype": "DocType",
+ "name": "TRT Print Job",
+ "module": "Table Remote Till",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "istable": 0,
+ "field_order": [
+  "outlet",
+  "register",
+  "device",
+  "agent",
+  "order",
+  "pos_invoice",
+  "kind",
+  "status",
+  "job_key",
+  "expires_unix",
+  "payload_base64",
+  "target_json",
+  "claim_token",
+  "claimed_by",
+  "claimed_at",
+  "finished_at",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "outlet",
+   "fieldtype": "Link",
+   "label": "Outlet",
+   "options": "TRT Outlet",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "register",
+   "fieldtype": "Link",
+   "label": "Register",
+   "options": "TRT Register"
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Link",
+   "label": "Device",
+   "options": "TRT Device",
+   "reqd": 1
+  },
+  {
+   "fieldname": "agent",
+   "fieldtype": "Data",
+   "label": "Agent",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "order",
+   "fieldtype": "Link",
+   "label": "Order",
+   "options": "TRT Order"
+  },
+  {
+   "fieldname": "pos_invoice",
+   "fieldtype": "Link",
+   "label": "Pos Invoice",
+   "options": "POS Invoice"
+  },
+  {
+   "fieldname": "kind",
+   "fieldtype": "Select",
+   "label": "Kind",
+   "options": "Receipt\nReceipt Test\nCash Drawer\nDrawer Test",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nClaimed\nSent\nQueued\nUnknown",
+   "default": "Pending",
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "job_key",
+   "fieldtype": "Data",
+   "label": "Job Key",
+   "unique": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "expires_unix",
+   "fieldtype": "Float",
+   "label": "Expires Unix",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "payload_base64",
+   "fieldtype": "Long Text",
+   "label": "Payload Base64",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "target_json",
+   "fieldtype": "Code",
+   "label": "Target Json",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "claim_token",
+   "fieldtype": "Data",
+   "label": "Claim Token",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "claimed_by",
+   "fieldtype": "Link",
+   "label": "Claimed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "claimed_at",
+   "fieldtype": "Datetime",
+   "label": "Claimed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finished_at",
+   "fieldtype": "Datetime",
+   "label": "Finished At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "TRT Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

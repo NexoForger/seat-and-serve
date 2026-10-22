@@ -47,11 +47,12 @@ _readable_doctypes = (
 	"TRT Business Setup", "TRT Device", "TRT FX Rate", "TRT Guest Appearance", "TRT Import Job",
 	"TRT Kitchen Station", "TRT Kitchen Ticket", "TRT Legacy Record",
 	"TRT Menu", "TRT Modifier Group", "TRT Onboarding Run", "TRT Order",
-	"TRT Outlet", "TRT Payment Attempt", "TRT Register", "TRT Reservation", "TRT Service Area",
+	"TRT Outlet", "TRT Payment Attempt", "TRT Print Job", "TRT Register", "TRT Reservation", "TRT Service Area",
 	"TRT Staff Assignment", "TRT Sync Event", "TRT Table",
 )
 doctype_js = {doctype: "public/js/trt_form_titles.js" for doctype in _readable_doctypes}
 doctype_js["TRT Import Job"] = ["public/js/trt_import_job.js", "public/js/trt_form_titles.js"]
+doctype_js["TRT Device"] = ["public/js/trt_device.js", "public/js/trt_form_titles.js"]
 doctype_list_js = {doctype: "public/js/trt_list_titles.js" for doctype in _readable_doctypes}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}

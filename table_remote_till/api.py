@@ -1187,6 +1187,9 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 		"outlet": order.outlet, "register": order.register, "order": order.name,
 		"event_type": "cash_checkout", "payload_json": json.dumps(tenders),
 		"status": "Applied", "received_at": now_datetime()}).insert(ignore_permissions=True)
+	from table_remote_till.printer_api import schedule_cash_drawer
+
+	schedule_cash_drawer(order, invoice.name, tenders)
 	return _snapshot(order)
 
 

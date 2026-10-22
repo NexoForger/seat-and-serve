@@ -174,6 +174,19 @@ SPECS = {
         f("order_line", "Data"), f("item", "Link", "Item", reqd=1),
         f("qty", "Float", reqd=1), f("note", "Small Text"),
     ],
+    "TRT Print Job": [
+        f("outlet", "Link", "TRT Outlet", reqd=1, search_index=1),
+        f("register", "Link", "TRT Register"), f("device", "Link", "TRT Device", reqd=1),
+        f("agent", reqd=1, search_index=1, in_list_view=1),
+        f("order", "Link", "TRT Order"), f("pos_invoice", "Link", "POS Invoice"),
+        f("kind", "Select", "Receipt\nReceipt Test\nCash Drawer\nDrawer Test", reqd=1, in_list_view=1),
+        f("status", "Select", "Pending\nClaimed\nSent\nQueued\nUnknown", default="Pending", search_index=1, in_list_view=1),
+        f("job_key", unique=1, read_only=1), f("expires_unix", "Float", hidden=1, read_only=1),
+        f("payload_base64", "Long Text", hidden=1, read_only=1), f("target_json", "Code", "JSON", read_only=1),
+        f("claim_token", hidden=1, read_only=1), f("claimed_by", "Link", "User", read_only=1),
+        f("claimed_at", "Datetime", read_only=1), f("finished_at", "Datetime", read_only=1),
+        f("error", "Small Text", read_only=1),
+    ],
     "TRT Device": [
         f("title", reqd=1, in_list_view=1), f("outlet", "Link", "TRT Outlet", reqd=1),
         f("register", "Link", "TRT Register"),
@@ -234,7 +247,7 @@ def main():
              "print": 1, "report": 1, "export": 1}
             for role in ("System Manager", "TRT Manager")
         ]
-        if title == "TRT Onboarding Run":
+        if title in {"TRT Onboarding Run", "TRT Print Job"}:
             permissions = [{"role": role, "read": 1, "report": 1, "export": 1}
                            for role in ("System Manager", "TRT Manager")]
         doc = {

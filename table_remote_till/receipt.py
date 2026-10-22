@@ -1,16 +1,14 @@
-"""Print submitted POS Invoices on an outlet's Ethernet receipt printer."""
+"""Print submitted POS Invoices over LAN or a local USB printer queue."""
 
 from __future__ import annotations
 
-import ipaddress
-import json
 import re
-import socket
 from types import SimpleNamespace
 
 import frappe
 from PIL import Image, ImageDraw, ImageFont, features
 from frappe.utils import flt, strip_html
+from table_remote_till.printing import PrintError, send, settings
 
 
 WIDTH = 576  # 80 mm paper at 203 dpi
@@ -30,7 +28,7 @@ def configured_printer(outlet: str, register: str | None = None):
 	"""
 	devices = frappe.get_all("TRT Device", filters={"outlet": outlet,
 		"kind": "Receipt Printer", "enabled": 1},
-		fields=["name", "title", "register", "driver", "address", "settings_json"], order_by="modified desc")
+		fields=["name", "title", "outlet", "register", "driver", "address", "settings_json"], order_by="modified desc")
 	if not devices:
 		return None
 	if register:
@@ -41,21 +39,6 @@ def configured_printer(outlet: str, register: str | None = None):
 		if not row.register:
 			return row
 	return devices[0]
-
-
-def _printer_target(device):
-	if (device.driver or "escpos_tcp").lower() != "escpos_tcp":
-		frappe.throw("Receipt printer driver must be escpos_tcp")
-	address = (device.address or "").strip()
-	host, separator, port_text = address.partition(":")
-	try:
-		ipaddress.IPv4Address(host)
-		port = int(port_text) if separator else 9100
-		if not 1 <= port <= 65535:
-			raise ValueError("port")
-	except ValueError:
-		frappe.throw("Receipt printer address must be an IPv4 address, optionally followed by :port")
-	return host, port
 
 
 def _font(size):
@@ -197,13 +180,12 @@ def escpos_bytes(image, cut=True):
 	return bytes(output)
 
 
-def _send(device, image):
-	host, port = _printer_target(device)
-	settings = json.loads(device.settings_json or "{}")
-	payload = escpos_bytes(image, cut=settings.get("auto_cut", True))
-	with socket.create_connection((host, port), timeout=5) as connection:
-		connection.settimeout(10)
-		connection.sendall(payload)
+def _send(device, image, kind="Receipt Test", order=None, invoice=None):
+	payload = escpos_bytes(image, cut=settings(device)["auto_cut"])
+	if settings(device).get("print_agent"):
+		from table_remote_till.print_jobs import enqueue
+		return enqueue(device, payload, kind, order=order, invoice=invoice)
+	return send(device, payload)
 
 
 def print_invoice(invoice_name, order_name, device, copy=False):
@@ -214,16 +196,17 @@ def print_invoice(invoice_name, order_name, device, copy=False):
 	outlet = frappe.get_doc("TRT Outlet", order.outlet)
 	company = frappe.get_doc("Company", outlet.company)
 	try:
-		_send(device, render_receipt(invoice, order, outlet, company, copy))
-	except OSError:
+		result = _send(device, render_receipt(invoice, order, outlet, company, copy),
+			kind="Receipt", order=order.name, invoice=invoice.name)
+	except (OSError, PrintError):
 		frappe.log_error("Receipt printer connection failed", "TRT receipt print")
 		frappe.throw("Receipt printer is unreachable. Payment is saved; check the printer and use Reprint receipt.")
-	return {"invoice": invoice.name, "printer": device.title or device.name}
+	return {"invoice": invoice.name, "printer": device.title or device.name, **result}
 
 
-def test_receipt(outlet_name, register):
+def test_receipt(outlet_name, register=None, device=None):
 	"""Print a marked setup slip with no order or accounting transaction."""
-	device = configured_printer(outlet_name, register)
+	device = device or configured_printer(outlet_name, register)
 	if not device:
 		frappe.throw("No enabled receipt printer is assigned to this register")
 	outlet = frappe.get_doc("TRT Outlet", outlet_name)
@@ -235,5 +218,8 @@ def test_receipt(outlet_name, register):
 		total=0, discount_amount=0, total_taxes_and_charges=0, taxes=[],
 		rounded_total=0, grand_total=0, payments=[])
 	order = SimpleNamespace(order_number="TEST", table=None)
-	_send(device, render_receipt(invoice, order, outlet, company, test=True))
-	return {"printer": device.title or device.name, "test": True}
+	try:
+		result = _send(device, render_receipt(invoice, order, outlet, company, test=True))
+	except PrintError as error:
+		frappe.throw(str(error))
+	return {"printer": device.title or device.name, "test": True, **result}

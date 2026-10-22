@@ -122,6 +122,10 @@ For BIM POS, use a separate export for each record type. BIM POS product lines a
 
 See [gateway/README.md](gateway/README.md). It uses HTTPS, a bearer token, and a durable SQLite event queue. It needs a dedicated Frappe API token, outlet ID, and certificates. It is a prototype: offline prices are provisional, accepted cash stays pending until ERPNext confirms settlement, and real LAN/device certification is outstanding.
 
+## Shift closing
+
+For shift consolidation status, preserved cash counts, and retrying a failed close, see [shift closing](docs/shift-closing.md).
+
 ## LAN / USB receipt printer and cash drawer
 
 For each outlet or register, create an enabled **TRT Device** with Kind **Receipt Printer**, then use **Configure printer** to choose LAN or USB and enable the attached cash drawer. LAN uses Driver `escpos_tcp` and Address `PRINTER_IP:9100` (for example `192.168.0.46:9100`). USB uses Driver `escpos_usb` and the local OS printer queue name in Address (CUPS on Mac/Linux/Pi, or the installed Windows printer). Leave Register blank for an outlet-wide printer; a matching register printer takes priority. **Print test page** prints a marked no-sale receipt. **Test cash drawer** sends only the configured drawer pulse and requires manager access.

@@ -42,6 +42,7 @@ class ShiftTests(unittest.TestCase):
         utils = types.ModuleType('frappe.utils')
         utils.flt = lambda value: float(value or 0)
         utils.now_datetime = lambda: '2026-10-10 10:00:00'
+        utils.strip_html = lambda value: value
         api = types.ModuleType('table_remote_till.api')
         api._as_admin = contextlib.nullcontext
         api._outlet = Mock()
@@ -125,3 +126,40 @@ class ShiftTests(unittest.TestCase):
         row = closing.payment_reconciliation[0]
         self.assertEqual((row.closing_amount, row.difference), (145, -5))
         closing.submit.assert_called_once()
+
+    def test_pending_shift_uses_saved_counts_and_preserves_failure_message(self):
+        self.module._context = Mock(return_value=Row(name='POS-A', company='Company'))
+        self.module.active_opening = Mock(return_value='OPEN-1')
+        self.frappe.db.get_value.return_value = Row(name='CLOSE-1', status='Failed', error_message='Missing stock cost')
+        self.frappe.get_doc = Mock(return_value=Row(payment_reconciliation=[
+            Row(mode_of_payment='Cash', expected_amount=150, closing_amount=145)]))
+        self.frappe.get_cached_value = Mock(return_value='USD')
+        self.module._closing = Mock()
+        result = self.module.shift_details('OUTLET-A')
+        self.assertEqual(result['rows'][0]['amount'], 145)
+        self.assertEqual(result['pending_closing'].error_message, 'Missing stock cost')
+        self.module._closing.assert_not_called()
+
+    def test_failed_retry_reuses_the_same_document_and_rejects_another_outlet(self):
+        self.module._context = Mock(return_value=Row(name='POS-A', company='Company'))
+        closing = Row(name='CLOSE-1', pos_profile='POS-A', company='Company', docstatus=1, status='Failed')
+        self.frappe.get_doc = Mock(return_value=closing)
+        dependency = types.ModuleType('table_remote_till.pos_closing')
+        dependency.queue_closing = Mock()
+        with patch.dict(sys.modules, {'table_remote_till.pos_closing': dependency}):
+            self.assertEqual(self.module.retry_closing('OUTLET-A','CLOSE-1')['status'],'Queued')
+            dependency.queue_closing.assert_called_once_with(closing)
+            dependency.queue_closing.reset_mock()
+            closing.pos_profile = 'POS-B'
+            with self.assertRaises(ValueError): self.module.retry_closing('OUTLET-A','CLOSE-1')
+            dependency.queue_closing.assert_not_called()
+
+    def test_queued_or_completed_closing_retry_does_not_queue_again(self):
+        self.module._context = Mock(return_value=Row(name='POS-A', company='Company'))
+        dependency = types.ModuleType('table_remote_till.pos_closing')
+        dependency.queue_closing = Mock()
+        with patch.dict(sys.modules, {'table_remote_till.pos_closing': dependency}):
+            for status in ('Queued','Submitted'):
+                self.frappe.get_doc = Mock(return_value=Row(name='CLOSE-1',pos_profile='POS-A',company='Company',docstatus=1,status=status))
+                self.assertEqual(self.module.retry_closing('OUTLET-A','CLOSE-1')['status'], status)
+        dependency.queue_closing.assert_not_called()

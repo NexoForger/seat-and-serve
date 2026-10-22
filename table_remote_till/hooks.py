@@ -202,6 +202,9 @@ scheduler_events = {
 # extend_doctype_class = {
 # 	"Task": "table_remote_till.custom.task.CustomTaskMixin"
 # }
+extend_doctype_class = {
+	"POS Closing Entry": ["table_remote_till.pos_closing.DeferredTRTClosing"],
+}
 
 # Overriding Methods
 # ------------------------------

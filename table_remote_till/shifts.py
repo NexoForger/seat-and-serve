@@ -3,7 +3,7 @@
 import math
 
 import frappe
-from frappe.utils import flt, now_datetime
+from frappe.utils import flt, now_datetime, strip_html
 
 from table_remote_till.api import _as_admin, _outlet, _payload, _staff_outlet
 
@@ -68,10 +68,16 @@ def shift_details(outlet):
 	pending = None
 	if opening:
 		pending = frappe.db.get_value("POS Closing Entry", {"pos_opening_entry": opening,
-			"docstatus": 1}, ["name", "status"], as_dict=True)
-		closing = _closing(frappe.get_doc("POS Opening Entry", opening))
-		rows = [{"mode_of_payment": row.mode_of_payment, "expected_amount": row.expected_amount}
-			for row in closing.payment_reconciliation]
+			"docstatus": 1}, ["name", "status", "error_message"], as_dict=True)
+		if pending:
+			pending.error_message = strip_html(pending.error_message or "")
+			closing = frappe.get_doc("POS Closing Entry", pending.name)
+			rows = [{"mode_of_payment": row.mode_of_payment, "expected_amount": row.expected_amount,
+				"amount": row.closing_amount} for row in closing.payment_reconciliation]
+		else:
+			closing = _closing(frappe.get_doc("POS Opening Entry", opening))
+			rows = [{"mode_of_payment": row.mode_of_payment, "expected_amount": row.expected_amount}
+				for row in closing.payment_reconciliation]
 	else:
 		rows = [{"mode_of_payment": row.mode_of_payment, "expected_amount": 0}
 			for row in profile.payments]
@@ -107,8 +113,9 @@ def close_shift(outlet, opening_entry, amounts):
 	if opening.pos_profile != profile.name or opening.company != profile.company:
 		frappe.throw("Shift does not belong to this outlet", frappe.PermissionError)
 	existing = frappe.db.get_value("POS Closing Entry", {"pos_opening_entry": opening.name,
-		"docstatus": 1}, ["name", "status"], as_dict=True)
+		"docstatus": 1}, ["name", "status", "error_message"], as_dict=True)
 	if existing:
+		existing.error_message = strip_html(existing.error_message or "")
 		return existing
 	if opening.name != active_opening(profile.name):
 		frappe.throw("This shift is no longer open. Refresh before closing.")
@@ -122,3 +129,23 @@ def close_shift(outlet, opening_entry, amounts):
 		closing.flags.ignore_permissions = True
 		closing.submit()
 	return {"name": closing.name, "status": closing.status}
+
+
+@frappe.whitelist(methods=["POST"])
+def retry_closing(outlet, closing_name):
+	"""Retry the persisted closing, preserving its original invoices and cash counts."""
+	from table_remote_till.pos_closing import queue_closing
+
+	profile = _context(outlet, lock=True)
+	closing = frappe.get_doc("POS Closing Entry", closing_name)
+	if closing.pos_profile != profile.name or closing.company != profile.company:
+		frappe.throw("Closing does not belong to this outlet", frappe.PermissionError)
+	if closing.docstatus != 1:
+		frappe.throw("Only submitted closings can be retried")
+	if closing.status in ("Queued", "Submitted"):
+		return {"name": closing.name, "status": closing.status}
+	if closing.status != "Failed":
+		frappe.throw("Only a failed closing can be retried")
+	with _as_admin():
+		queue_closing(closing)
+	return {"name": closing.name, "status": "Queued"}

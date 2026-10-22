@@ -35,7 +35,7 @@ const options = ref<{ cash_modes: string[]; base_currency: string; fx_rate?: { l
   opening_entry?: string; pos_invoice_mode: boolean; receipt_printer_available: boolean } | null>(null);
 type ShiftDetails = {
   opening_entry?: string;
-  pending_closing?: { name: string; status: string };
+  pending_closing?: { name: string; status: string; error_message?: string };
   currency: string;
   rows: { mode_of_payment: string; expected_amount: number; amount: number | '' }[];
 };
@@ -53,7 +53,8 @@ async function promptShift() {
   busy.value = true; shiftError.value = ''; showTools.value = false;
   try {
     const details = await get<ShiftDetails>('shifts.shift_details', { outlet: outlet.value });
-    shiftDetails.value = { ...details, rows: details.rows.map(row => ({ ...row, amount: '' })) };
+    shiftDetails.value = { ...details, rows: details.rows.map(row => ({ ...row, amount: row.amount ?? '' })) };
+    shiftError.value = details.pending_closing?.error_message || '';
     await refreshCheckoutOptions();
     await nextTick();
     shiftDialog.value?.showModal();
@@ -70,12 +71,12 @@ async function saveShift() {
   }
   shiftSaving.value = true; busy.value = true; shiftError.value = '';
   try {
-    const result = await post<{ name: string; status: string }>(details.opening_entry ? 'shifts.close_shift' : 'shifts.open_shift', {
+    const result = await post<{ name: string; status: string; error_message?: string }>(details.opening_entry ? 'shifts.close_shift' : 'shifts.open_shift', {
       outlet: outlet.value, opening_entry: details.opening_entry,
       amounts: Object.fromEntries(details.rows.map(row => [row.mode_of_payment, Number(row.amount)])),
     });
     if (result.status === 'Failed') {
-      shiftError.value = text('Closing failed during invoice processing. Review closing entry ', 'فشلت معالجة فواتير الإغلاق. راجع سجل الإغلاق ') + result.name;
+      shiftError.value = result.error_message || text('Closing failed during invoice processing. Review closing entry ', 'فشلت معالجة فواتير الإغلاق. راجع سجل الإغلاق ') + result.name;
       details.pending_closing = result;
     } else {
       shiftDialog.value?.close();
@@ -85,6 +86,38 @@ async function saveShift() {
         : text('Shift opened. ', 'تم فتح الوردية. ') + result.name, 'success');
     }
     await refreshCheckoutOptions();
+  } catch (error) { shiftError.value = String(error); }
+  finally { shiftSaving.value = false; busy.value = false; }
+}
+
+async function refreshShiftStatus() {
+  if (shiftSaving.value) return;
+  shiftSaving.value = true; busy.value = true;
+  try {
+    const details = await get<ShiftDetails>('shifts.shift_details', { outlet: outlet.value });
+    await refreshCheckoutOptions();
+    if (!details.opening_entry) {
+      shiftDialog.value?.close();
+      setNotice(text('Shift closed.', 'تم إغلاق الوردية.'), 'success');
+    } else {
+      shiftDetails.value = { ...details, rows: details.rows.map(row => ({ ...row, amount: row.amount ?? '' })) };
+      shiftError.value = details.pending_closing?.error_message || '';
+    }
+  } catch (error) { shiftError.value = String(error); }
+  finally { shiftSaving.value = false; busy.value = false; }
+}
+
+async function retryShiftClosing() {
+  const closing = shiftDetails.value?.pending_closing;
+  if (!closing || closing.status !== 'Failed' || shiftSaving.value) return;
+  shiftSaving.value = true; busy.value = true;
+  try {
+    const result = await post<{ name: string; status: string }>('shifts.retry_closing', {
+      outlet: outlet.value, closing_name: closing.name,
+    });
+    shiftDetails.value!.pending_closing = result;
+    shiftError.value = '';
+    setNotice(text('Shift closing queued again with the saved cash counts.', 'أُعيدت معالجة الإغلاق مع مبالغ العد المحفوظة.'), 'info');
   } catch (error) { shiftError.value = String(error); }
   finally { shiftSaving.value = false; busy.value = false; }
 }
@@ -736,6 +769,10 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
         <p>{{ shiftDetails.opening_entry ? text('Count the money you have at the end of the shift.', 'عدّ المال الموجود لديك في نهاية الوردية.') : text('How much money are you starting with?', 'كم مبلغ المال الذي تبدأ به؟') }}</p>
         <p>{{ text('Enter all amounts in', 'أدخل جميع المبالغ بعملة') }} <strong>{{ shiftDetails.currency }}</strong>.</p>
         <p v-if="shiftDetails.pending_closing" role="status">{{ text('A closing entry already exists:', 'يوجد سجل إغلاق بالفعل:') }} <a :href="'/app/pos-closing-entry/' + encodeURIComponent(shiftDetails.pending_closing.name)">{{ shiftDetails.pending_closing.name }}</a> · {{ shiftDetails.pending_closing.status }}</p>
+        <div v-if="shiftDetails.pending_closing" class="register-shift-actions">
+          <button type="button" :disabled="shiftSaving" @click="refreshShiftStatus">{{ text('Refresh status', 'تحديث الحالة') }}</button>
+          <button v-if="shiftDetails.pending_closing.status === 'Failed'" type="button" :disabled="shiftSaving" @click="retryShiftClosing">{{ text('Retry closing with saved counts', 'إعادة الإغلاق بالمبالغ المحفوظة') }}</button>
+        </div>
         <label v-for="row in shiftDetails.rows" :key="row.mode_of_payment" class="register-shift-count">
           <strong>{{ row.mode_of_payment }}</strong>
           <span v-if="shiftDetails.opening_entry">{{ text('Expected', 'المتوقع') }}: {{ money(row.expected_amount, shiftDetails.currency, language) }}</span>

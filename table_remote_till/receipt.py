@@ -113,6 +113,11 @@ def _receipt_rows(invoice, order, outlet, company, copy=False, test=False):
 			rows.append(("text", "Exchange rate: 1 USD = " + f"{rate:,.6f}".rstrip("0").rstrip(".") + " LBP", "small"))
 		else:
 			rows += [("pair", ("TOTAL (LBP)", "Unavailable"), "small"), ("text", "Exchange rate: not recorded", "small")]
+	if getattr(order, "channel", None) == "Tab" and getattr(order, "pos_invoice", None):
+		from table_remote_till.tab_payments import balance
+		payment_balance = balance(order, invoice)
+		rows += [("pair", ("PAID", _money(payment_balance["paid_amount"], currency)), "body"),
+			("pair", ("BALANCE DUE", _money(payment_balance["amount_due"], currency)), "title")]
 	for payment in invoice.payments:
 		if flt(payment.amount):
 			rows.append(("pair", (_clean(payment.mode_of_payment), _money(payment.amount, currency)), "body"))

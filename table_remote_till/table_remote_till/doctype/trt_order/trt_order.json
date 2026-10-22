@@ -115,7 +115,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nSent\nPreparing\nReady\nServed\nSettled\nPartially Returned\nReturned\nVoid",
+   "options": "Draft\nSent\nPreparing\nReady\nServed\nSettled\nPartially Returned\nReturned\nVoid\nPartially Paid",
    "default": "Draft",
    "in_list_view": 1
   },

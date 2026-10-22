@@ -50,6 +50,17 @@ class DrawerTests(unittest.TestCase):
         self.module._send_drawer.assert_not_called()
         self.frappe.db.commit.assert_not_called()  # Payment retains its original transaction boundary.
 
+    def test_tab_payments_have_distinct_keys_and_retries_do_not_repeat(self):
+        inserted = Row(name="EVENT")
+        self.frappe.get_doc = Mock(return_value=Mock(insert=Mock(return_value=inserted)))
+        for payment in ('PAY-1', 'PAY-2'):
+            self.module.schedule_cash_drawer(self.order, 'INV-1', [{'amount': 10}], payment_id=payment)
+        keys = [call.args[0]['event_id'] for call in self.frappe.get_doc.call_args_list]
+        self.assertEqual(keys, [self.module._event_id('INV-1:PAY-1'), self.module._event_id('INV-1:PAY-2')])
+        self.frappe.db.exists.return_value = True
+        self.module.schedule_cash_drawer(self.order, 'INV-1', [{'amount': 10}], payment_id='PAY-2')
+        self.assertEqual(self.frappe.get_doc.call_count, 2)
+
     def test_no_cash_no_drawer_and_disabled_printers_do_not_schedule(self):
         self.module.schedule_cash_drawer(self.order, "INV-1", [])
         self.receipt.configured_printer.assert_not_called()

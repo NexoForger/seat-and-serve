@@ -30,7 +30,7 @@ ORDER_FIELDS = [
 	"currency", "exchange_rate", "lbp_per_usd", "delivery_name", "delivery_phone", "delivery_address", "net_total", "tax_total", "grand_total", "revision", "pos_invoice",
 	"promotion", "manual_discount_type", "manual_discount_value", "manual_discount_reason", "loyalty_points_to_redeem", "loyalty_amount_redeemed",
 ]
-OPEN_ORDER_STATUSES = ("Draft", "Sent", "Preparing", "Ready", "Served")
+OPEN_ORDER_STATUSES = ("Draft", "Sent", "Preparing", "Ready", "Served", "Partially Paid")
 BILL_ORDER_STATUSES = OPEN_ORDER_STATUSES + ("Settled", "Partially Returned", "Returned")
 GUEST_APPEARANCE_DEFAULTS = {
 	"brand_logo": "", "primary_color": "#171917", "accent_color": "#e8f574",
@@ -344,12 +344,13 @@ def _bill_snapshot(order):
 	loyalty = {"program": None, "available_points": 0,
 		"points": int(root.loyalty_points_to_redeem or 0), "amount": 0, "conversion_factor": 0}
 	billing_errors = []
+	invoice = None
 	invoice_names = {ticket.pos_invoice for ticket in orders if ticket.pos_invoice}
-	if lines and all(ticket.status in ("Settled", "Partially Returned", "Returned") for ticket in orders) and len(invoice_names) == 1:
+	if lines and len(invoice_names) == 1 and (all(ticket.status in ("Settled", "Partially Returned", "Returned") for ticket in orders) or (order.channel == "Tab" and order.pos_invoice)):
 		# Paid bills retain the submitted invoice amounts if tax or promotion settings change.
 		invoice = frappe.db.get_value("POS Invoice", next(iter(invoice_names)),
 			["net_total", "total_taxes_and_charges", "rounded_total", "grand_total",
-				"discount_amount", "loyalty_program", "loyalty_points", "loyalty_amount"], as_dict=True)
+				"discount_amount", "loyalty_program", "loyalty_points", "loyalty_amount", "paid_amount", "outstanding_amount"], as_dict=True)
 		if invoice:
 			totals = {"net_total": flt(invoice.net_total),
 				"tax_total": flt(invoice.total_taxes_and_charges),
@@ -377,6 +378,15 @@ def _bill_snapshot(order):
 		if loyalty["amount"]:
 			_reprice(preview, outlet, discount["amount"] + loyalty["amount"])
 			totals = {key: flt(preview[key]) for key in totals}
+	paid_amount = 0
+	amount_due = max(0, flt(totals["grand_total"]))
+	if invoice_names and len(invoice_names) == 1 and invoice:
+		paid_amount = flt(invoice.paid_amount)
+		amount_due = max(0, flt(invoice.outstanding_amount))
+		if order.channel == "Tab":
+			from table_remote_till.tab_payments import balance
+			state = balance(order, invoice)
+			paid_amount, amount_due = state["paid_amount"], state["amount_due"]
 	return {
 		"ticket_count": len(orders),
 		"root_revision": root.revision,
@@ -391,7 +401,7 @@ def _bill_snapshot(order):
 		"discount_amount": discount["amount"], "discount_label": discount["label"],
 		"billing_errors": billing_errors,
 		"loyalty": loyalty,
-		"amount_due": max(0, flt(totals["grand_total"])),
+		"paid_amount": paid_amount, "amount_due": amount_due,
 		"order_numbers": [ticket.order_number for ticket in orders],
 		"pos_invoice": next((ticket.pos_invoice for ticket in orders if ticket.pos_invoice), None),
 		"orders": [{"name": ticket.name, "order_number": ticket.order_number,
@@ -579,10 +589,14 @@ def register_tabs(outlet):
 	_staff_outlet(outlet)
 	if not _outlet(outlet).enable_tabs:
 		return []
-	return frappe.get_all("TRT Order", filters={"outlet": outlet, "channel": "Tab",
+	rows = frappe.get_all("TRT Order", filters={"outlet": outlet, "channel": "Tab",
 		"status": ["in", OPEN_ORDER_STATUSES]},
 		fields=["name", "order_number", "tab_label", "status", "grand_total", "currency"],
 		order_by="modified desc")
+	for row in rows:
+		bill = _bill_snapshot(frappe.get_doc("TRT Order", row.name))
+		row.update({"amount_due": bill["amount_due"], "paid_amount": bill["paid_amount"]})
+	return rows
 
 
 @frappe.whitelist()
@@ -821,7 +835,7 @@ def order_command(command, event_id, order_name=None, expected_revision=None, gu
 			frappe.throw("Order does not belong to ordering session", frappe.PermissionError)
 		if int(expected_revision or -1) != order.revision:
 			frappe.throw("Order changed; refresh before retrying", frappe.TimestampMismatchError)
-		if order.status in ("Settled", "Void"):
+		if order.pos_invoice or order.status in ("Settled", "Void"):
 			frappe.throw("Order is closed")
 		if action in ("add_line", "set_qty") and order.status != "Draft":
 			frappe.throw("Sent orders cannot be changed; start a new order")
@@ -916,7 +930,7 @@ def configure_bill(order_name, config, event_id, expected_revision):
 		frappe.throw("Ticket is outside this bill")
 	if int(expected_revision) != root.revision:
 		frappe.throw("Bill changed; refresh before retrying", frappe.TimestampMismatchError)
-	if root.status in ("Settled", "Void"):
+	if root.pos_invoice or root.status in ("Settled", "Void"):
 		frappe.throw("Paid or void bills cannot be changed")
 	customer = config.get("customer") or _outlet(root.outlet).walk_in_customer
 	if not customer or not frappe.db.exists("Customer", {"name": customer, "disabled": 0}):
@@ -982,8 +996,8 @@ def print_receipt(order_name, copy=False):
 	"""Print or reprint the invoice for a settled staff order."""
 	order = frappe.get_doc("TRT Order", order_name)
 	_staff_outlet(order.outlet)
-	if order.status != "Settled" or not order.pos_invoice:
-		frappe.throw("Pay the order before printing a receipt")
+	if order.status not in ("Settled", "Partially Paid") or not order.pos_invoice:
+		frappe.throw("Record a payment before printing a receipt")
 	device = configured_printer(order.outlet, order.register)
 	if not device:
 		frappe.throw("Configure an enabled Receipt Printer in TRT Device for this outlet")
@@ -1043,6 +1057,9 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 		if locked_prior.order != order_name or frappe.parse_json(locked_prior.payload_json) != tenders:
 			frappe.throw("Event ID belongs to another checkout")
 		return _snapshot(order)
+	if order.channel == "Tab" and order.pos_invoice and order.status == "Partially Paid":
+		from table_remote_till.tab_payments import receive
+		return receive(order, outlet, tenders, event_id, expected_revision)
 	if all(ticket.status == "Settled" and ticket.pos_invoice for ticket in group):
 		invoice_names = {ticket.pos_invoice for ticket in group}
 		if len(invoice_names) == 1:
@@ -1107,6 +1124,12 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 		in_base = amount if currency == base else amount / fx if base == "USD" else amount * fx
 		amounts[mode] = amounts.get(mode, 0) + in_base
 		converted.append((mode, currency, amount))
+	if order.channel == "Tab" and tenders:
+		from table_remote_till.tab_payments import payment_amounts
+		normalized = payment_amounts(tenders, base, fx, {row.mode_of_payment for row in profile.payments})
+		amounts = {}
+		for row in normalized:
+			amounts[row["mode"]] = amounts.get(row["mode"], 0) + row["base_amount"]
 	invoice = frappe.new_doc("POS Invoice")
 	invoice.company = outlet.company
 	invoice.customer = root_order.customer or outlet.walk_in_customer or profile.customer
@@ -1158,7 +1181,12 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 	invoice_total = flt(invoice.rounded_total or invoice.grand_total)
 	if abs(invoice_total - flt(bill_total)) > (0.01 if base == "USD" else 1):
 		frappe.throw("Invoice price or tax changed; refresh order before checkout")
-	if abs(sum(amounts.values()) - amount_due) > (0.01 if base == "USD" else 1):
+	if order.channel == "Tab":
+		from table_remote_till.tab_payments import validate_amount
+		remaining = validate_amount(sum(amounts.values()), amount_due, base, profile.allow_partial_payment) if amount_due > 0 or tenders else 0
+	else:
+		remaining = 0
+	if order.channel != "Tab" and abs(sum(amounts.values()) - amount_due) > (0.01 if base == "USD" else 1):
 		frappe.throw("Cash tender must equal the remaining amount after loyalty redemption")
 	profile_modes = {payment.mode_of_payment: payment for payment in invoice.payments}
 	if not set(amounts).issubset(profile_modes):
@@ -1196,7 +1224,7 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 	for ticket in group:
 		if ticket.status == "Draft":
 			_release_kitchen(ticket)
-		ticket.status = "Settled"
+		ticket.status = "Partially Paid" if remaining > 0 else "Settled"
 		ticket.pos_invoice = invoice.name
 		ticket.exchange_rate = fx or 1
 		ticket.lbp_per_usd = receipt_fx or 0
@@ -1213,7 +1241,10 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 		"status": "Applied", "received_at": now_datetime()}).insert(ignore_permissions=True)
 	from table_remote_till.printer_api import schedule_cash_drawer
 
-	schedule_cash_drawer(order, invoice.name, tenders)
+	if order.channel == "Tab":
+		schedule_cash_drawer(order, invoice.name, tenders, payment_id=event_id)
+	else:
+		schedule_cash_drawer(order, invoice.name, tenders)
 	return _snapshot(order)
 
 
@@ -1562,7 +1593,7 @@ def _roll_up_ticket(ticket):
 
 
 def _roll_up_order(order):
-	if order.status in ("Draft", "Settled", "Void"):
+	if order.status in ("Draft", "Settled", "Void", "Partially Paid"):
 		return
 	statuses = frappe.get_all("TRT Kitchen Ticket", filters={"order": order.name,
 		"status": ["!=", "Cancelled"]}, pluck="status")

@@ -20,3 +20,11 @@ Regression checks:
 python3 -m unittest discover -s tests -p 'test_shifts.py' -v
 python3 -m unittest discover -s tests -p 'test_pos_closing.py' -v
 ```
+
+## Partial payments on tabs
+
+Enable **Allow Partial Payment** on the outlet's ERPNext **POS Profile**. In Till, open a Tab, choose Cash payment, and enter the amount received. The total stays unchanged; **Paid** increases and **Remaining balance** decreases. The tab remains **Partially Paid** until the balance is cleared. The open-tab list and receipt show the remaining balance. Overpayments are rejected; mixed USD/LBP cash uses the approved exchange rate.
+
+The first payment submits the sale invoice, so items, customer and discounts are fixed from that point. Create a separate order for additional sales. Further payments update the original POS Invoice while its shift remains open. After consolidation, they create native Payment Entries against the consolidated Sales Invoice and count in the cash reconciliation of the shift receiving them. They do not create another sale. A previous shift must finish consolidating before an old tab can receive cash in a new shift. Payment terms or foreign receivable accounts that change the allocation require an accountant to receive the payment.
+
+Pull the update, run `bench --site YOUR_SITE migrate`, clear the site cache and restart the bench processes. The committed Till bundle contains the updated UI. Enable the POS Profile option before testing a partial payment. Remote acceptance check: pay $30 on a $100 tab, reopen it and verify $70 remaining; close the shift, receive the $70 in a new shift, and verify the Payment Entry, zero balance and new-shift cash reconciliation.

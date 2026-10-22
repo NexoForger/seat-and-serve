@@ -87,7 +87,7 @@ def before_request():
     if not _assignment(_scope()):
         frappe.throw('Till PIN session expired or revoked. Sign in again.', frappe.AuthenticationError)
     if command:
-        if command.startswith(API_PREFIXES):
+        if command.startswith(API_PREFIXES) or command == 'table_remote_till.printer_api.drawer_status':
             return
     frappe.throw('This PIN signs into Till only. Sign out and use ERPNext login for Desk.', frappe.PermissionError)
 

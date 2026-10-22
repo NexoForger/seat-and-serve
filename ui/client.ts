@@ -89,7 +89,7 @@ export type Order = {
 };
 export type BillSummary = {
   ticket_count: number; root_revision: number; item_count: number; net_total: number; tax_total: number; grand_total: number;
-  amount_due: number; customer?: string; customer_name?: string; promotion?: string; discount_amount: number; discount_label?: string;
+  paid_amount?: number; amount_due: number; customer?: string; customer_name?: string; promotion?: string; discount_amount: number; discount_label?: string;
   billing_errors?: string[];
   manual_discount_type?: 'Percentage' | 'Amount'; manual_discount_value?: number; manual_discount_reason?: string;
   loyalty: { program?: string; available_points: number; points: number; conversion_factor: number; amount: number };

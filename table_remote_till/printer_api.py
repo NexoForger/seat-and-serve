@@ -54,7 +54,7 @@ def _event_id(invoice_name):
 	return "cash-drawer:" + hashlib.sha256(invoice_name.encode()).hexdigest()
 
 
-def schedule_cash_drawer(order, invoice_name, tenders):
+def schedule_cash_drawer(order, invoice_name, tenders, payment_id=None):
 	"""Called only by cash_checkout, inside its transaction, after invoice submission.
 
 	A unique invoice event prevents checkout retries, reprints, kitchen dispatch,
@@ -72,7 +72,7 @@ def schedule_cash_drawer(order, invoice_name, tenders):
 		target(device)
 	except PrintError as failure:
 		error = str(failure)
-	event_id = _event_id(invoice_name)
+	event_id = _event_id(invoice_name + (":" + payment_id if payment_id else ""))
 	if (frappe.db.exists("TRT Sync Event", {"event_id": event_id})
 		or frappe.db.exists("TRT Print Job", {"job_key": event_id})):
 		return
@@ -123,13 +123,15 @@ def drawer_status(order_name):
 	_staff_outlet(order.outlet)
 	if not order.pos_invoice:
 		return {"status": "Disabled"}
-	job = frappe.db.get_value("TRT Print Job", {"job_key": _event_id(order.pos_invoice)},
+	payment = frappe.db.get_value("TRT Sync Event", {"order": order.name, "event_type": "cash_checkout"}, "event_id", order_by="creation desc") if getattr(order, "channel", None) == "Tab" else None
+	drawer_key = _event_id(order.pos_invoice + (":" + payment if payment else ""))
+	job = frappe.db.get_value("TRT Print Job", {"job_key": drawer_key},
 		["status", "error", "expires_unix"], as_dict=True)
 	if job:
 		expired = job.status in ("Pending", "Claimed") and job.expires_unix and job.expires_unix <= time.time()
 		status = "Conflict" if expired or job.status == "Unknown" else "Applied" if job.status in ("Sent", "Queued") else "Pending"
 		return {"status": status, "error": job.error, "delivery": job.status, "agent": True}
-	event = frappe.db.get_value("TRT Sync Event", {"event_id": _event_id(order.pos_invoice)},
+	event = frappe.db.get_value("TRT Sync Event", {"event_id": drawer_key},
 		["status", "error", "payload_json"], as_dict=True)
 	if not event:
 		return {"status": "Disabled"}

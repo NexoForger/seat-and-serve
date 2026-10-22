@@ -70,13 +70,14 @@ class ShiftTests(unittest.TestCase):
                            Row(mode_of_payment='Card', expected_amount=-10)])
         dependency = types.ModuleType('closing_dependency')
         dependency.make_closing_entry_from_opening = Mock(return_value=closing)
-        opening = Row(balance_details=[Row(mode_of_payment='Cash', opening_amount=100),
+        opening = Row(name='OPEN', balance_details=[Row(mode_of_payment='Cash', opening_amount=100),
                                        Row(mode_of_payment='Spare drawer', opening_amount=50)])
         with patch.dict(sys.modules, {
-            'erpnext.accounts.doctype.pos_closing_entry.pos_closing_entry': dependency}):
+            'erpnext.accounts.doctype.pos_closing_entry.pos_closing_entry': dependency,
+            'table_remote_till.tab_payments': types.SimpleNamespace(shift_receipts=lambda opening: [Row(mode_of_payment='Cash', amount=30)])}):
             result = self.module._closing(opening)
         totals = {row.mode_of_payment: row.expected_amount for row in result.payment_reconciliation}
-        self.assertEqual(totals, {'Cash': 125, 'Card': -10, 'Spare drawer': 50})
+        self.assertEqual(totals, {'Cash': 155, 'Card': -10, 'Spare drawer': 50})
 
     def test_active_shift_includes_previous_days_but_not_drafts(self):
         self.module.active_opening('POS-A')

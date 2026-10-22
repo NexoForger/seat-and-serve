@@ -40,6 +40,13 @@ def _closing(opening):
 			rows[balance.mode_of_payment] = row
 		row.opening_amount = flt(balance.opening_amount)
 		row.expected_amount = flt(row.expected_amount) + row.opening_amount
+	from table_remote_till.tab_payments import shift_receipts
+	for payment in shift_receipts(opening.name):
+		row = rows.get(payment.mode_of_payment)
+		if row is None:
+			row = closing.append("payment_reconciliation", {"mode_of_payment": payment.mode_of_payment, "expected_amount": 0})
+			rows[payment.mode_of_payment] = row
+		row.expected_amount = flt(row.expected_amount) + flt(payment.amount)
 	return closing
 
 

@@ -11,6 +11,16 @@ Open **Till → Add items** with a manager account assigned to the outlet. Barco
 
 No print agent, WebUSB permission or scanner driver is involved. The scanner types into the browser like a keyboard; the ERP can be hosted remotely.
 
+## PC USB scanner → Add Items on a phone (works over HTTP)
+
+1. On the **phone**, open Add items and tap **Pair PC scanner**.
+2. Tap **Copy pairing link** and open that full link in the browser on the **PC** with the wired USB or wireless dongle scanner. On HTTP, the link is selected so you can copy it manually if the browser cannot copy automatically. You can also open `/till?scanner=usb` on the PC and paste the link there.
+3. Sign in on the PC with the **same manager account** as the phone. Keep the Add Items form open and visible on the phone.
+4. On the PC, click **Scan next**. The barcode input receives focus. Scan using keyboard/HID mode with an Enter or Tab suffix. The PC sends only the barcode through the ERP relay, bound to the phone's current item draft.
+5. Check the barcode on the **phone**, enter the item details and explicitly save. For another capture click **Scan next** on the PC again.
+
+This flow uses no camera, WebUSB, driver or print agent and does **not** require HTTPS or a shared LAN. The PC scanner page must have focus while scanning, and both devices must be able to reach the same ERP. The same pairing expiry, duplicate protection and stale-draft rules apply. Browser camera access still requires HTTPS; the USB relay provides the camera-free option on HTTP.
+
 ## Camera on the same phone
 
 Open Add items on the phone over **HTTPS**, tap **Scan with camera**, and allow camera access. The rear camera is preferred; use the camera selector if necessary. Supported formats: EAN-13, EAN-8, UPC-A, UPC-E, Code 128, Code 39 and ITF. Images are decoded locally with bundled ZXing and are not uploaded. Capture stops after one result. Close the camera to cancel; hiding or leaving the page releases its stream. Manual input and keyboard scanners remain available when camera access fails.
@@ -23,7 +33,7 @@ Open Add items on the phone over **HTTPS**, tap **Scan with camera**, and allow 
 4. Tap **Scan next** for each new capture. If delivery loses its response, **Retry delivery of the same scan** uses the same ID and cannot apply it twice.
 5. Disconnect on either device when finished. Reconnect in the same phone tab after a page reload. A different phone requires disconnecting and pairing again.
 
-The ERP relays scans through authenticated HTTPS requests; neither device needs a shared LAN with the other or with the ERP. The visible computer tab polls once per second. Pairing remains active across new items, expires after 15 minutes without scan/form activity or after one hour total, and allows one phone. Merely polling does not extend inactivity. The phone is authorized to transfer barcodes only; it cannot save an item or edit other form fields. Saving, clearing the barcode or leaving the form invalidates the previous draft; old or repeated deliveries cannot fill the next item.
+The ERP relays scans through authenticated ERP requests; neither device needs a shared LAN with the other or with the ERP. The visible computer tab polls once per second. Pairing remains active across new items, expires after 15 minutes without scan/form activity or after one hour total, and allows one phone. Merely polling does not extend inactivity. The phone is authorized to transfer barcodes only; it cannot save an item or edit other form fields. Saving, clearing the barcode or leaving the form invalidates the previous draft; old or repeated deliveries cannot fill the next item.
 
 The QR secret is in the URL fragment, which browsers do not send in HTTP requests. The scanner removes that fragment and keeps credentials only in that phone tab's session storage. Relay credentials use secret-named POST fields for Frappe log redaction; Redis holds credential hashes and expiring pairing state. Preserve normal Frappe CSRF protection. Do not configure proxies or debug tools to record full request bodies. Redis must be available for pairing.
 

@@ -51,7 +51,7 @@ def exchange(token, action, tab=None, desktop_secret=None, phone_secret=None, dr
         if not state or now-state['created'] >= 3600 or now-state['activity'] >= 900:
             frappe.throw('Pairing expired. Pair the phone again.')
         if frappe.session.user != state['owner']:
-            frappe.throw('Sign in with the same manager account as the computer', frappe.PermissionError)
+            frappe.throw('Sign in with the same manager account as the item form', frappe.PermissionError)
         _manager(state['outlet'])
         is_desktop = (isinstance(desktop_secret, str) and secrets.compare_digest(hashlib.sha256(desktop_secret.encode()).hexdigest(), state['desktop_hash'])
             and tab == state['tab'] and _sid() == state['desktop_sid'])
@@ -59,7 +59,7 @@ def exchange(token, action, tab=None, desktop_secret=None, phone_secret=None, dr
             and _sid() == state['phone_sid'])
         if action == 'join':
             if state['phone_hash'] and not is_phone:
-                frappe.throw('A phone is already paired. Disconnect it on the computer first.')
+                frappe.throw('A scanner device is already paired. Disconnect it on the item form first.')
             if not state['phone_hash']:
                 phone_secret = secrets.token_urlsafe(32)
                 state['phone_hash'], state['phone_sid'] = hashlib.sha256(phone_secret.encode()).hexdigest(), _sid()
@@ -90,7 +90,7 @@ def exchange(token, action, tab=None, desktop_secret=None, phone_secret=None, dr
                     frappe.throw('This item form changed. Scan again for the current item.')
                 if scan_id not in state['seen']:
                     if state['pending']:
-                        frappe.throw('The computer has not received the previous scan yet')
+                        frappe.throw('The item form has not received the previous scan yet')
                     state['pending'] = dict(barcode=barcode, draft=draft, scan_id=scan_id)
                     state['seen'].append(scan_id)
                 state['activity'] = now

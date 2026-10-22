@@ -18,6 +18,9 @@ const message = ref("");
 const duplicate = ref(false);
 const processing = ref(false);
 const qr = ref("");
+const pairingLink = ref("");
+const linkInput = ref<HTMLInputElement | null>(null);
+const scannerMode = ref("phone");
 const paired = ref(false);
 const pair = ref<{ token: string; desktop_secret: string } | null>(null);
 const tab = eventId();
@@ -164,6 +167,7 @@ async function disconnect() {
 	const previous = pair.value;
 	pair.value = null;
 	qr.value = "";
+	pairingLink.value = "";
 	paired.value = false;
 	seen.clear();
 	if (previous)
@@ -173,8 +177,28 @@ async function disconnect() {
 			/* TTL revokes unreachable pairings. */
 		}
 }
-async function connect() {
+function copyLink() {
+	linkInput.value?.focus();
+	linkInput.value?.select();
+	if (navigator.clipboard && window.isSecureContext) {
+		void navigator.clipboard.writeText(pairingLink.value).catch(() => {
+			message.value = text("Select and copy the pairing link.", "حدد رابط الربط وانسخه.");
+		});
+	} else {
+		try {
+			document.execCommand("copy");
+		} catch {
+			/* The selected link can be copied manually on HTTP. */
+		}
+		message.value = text(
+			"Pairing link selected. Copy it and open it on the scanner PC.",
+			"تم تحديد رابط الربط. انسخه وافتحه على حاسوب الماسح.",
+		);
+	}
+}
+async function connect(mode = "phone") {
 	await disconnect();
+	scannerMode.value = mode;
 	message.value = "";
 	try {
 		const created = await post<{ token: string; desktop_secret: string }>("barcodes.start", {
@@ -186,9 +210,11 @@ async function connect() {
 		pair.value = created;
 		const currentPair = pair.value;
 		await arm(suspended ? null : draft);
-		const QR = await import("qrcode");
-		const url = new URL("/till?scanner=phone", location.origin);
+		const url = new URL("/till?scanner=" + mode, location.origin);
 		url.hash = created.token;
+		if (!disposed && pair.value === currentPair) pairingLink.value = url.toString();
+		if (mode === "usb") return;
+		const QR = await import("qrcode");
 		const image = await QR.toDataURL(url.toString());
 		if (!disposed && pair.value === currentPair) qr.value = image;
 	} catch (cause) {
@@ -274,15 +300,38 @@ defineExpose({ prepareSave, resume, reset, focus });
 				{{ text("Focus scanner", "تحديد الماسح") }}</button
 			><button type="button" :disabled="disabled || processing" @click="camera = true">
 				{{ text("Scan with camera", "المسح بالكاميرا") }}</button
-			><button type="button" :disabled="disabled || processing" @click="connect">
+			><button type="button" :disabled="disabled || processing" @click="connect('phone')">
 				{{ text("Pair phone", "ربط الهاتف") }}</button
+			><button type="button" :disabled="disabled || processing" @click="connect('usb')">
+				{{ text("Pair PC scanner", "ربط ماسح الحاسوب") }}</button
 			><button type="button" :disabled="disabled || processing" @click="reset">
 				{{ text("Clear barcode", "مسح الباركود") }}
 			</button>
 		</div>
 		<p v-if="message" :role="duplicate ? 'alert' : 'status'">{{ message }}</p>
-		<div v-if="qr">
+		<div v-if="pairingLink">
+			<p v-if="scannerMode === 'usb'">
+				{{
+					text(
+						"Open this link on the PC with the USB/dongle scanner. Sign in with the same manager account, then click Scan next on that PC. Keep Add Items open here. No camera or HTTPS is needed for this scanner flow.",
+						"افتح هذا الرابط على الحاسوب المتصل بالماسح وسجل الدخول بحساب المدير نفسه ثم اضغط مسح التالي هناك. أبقِ نموذج إضافة الأصناف مفتوحاً هنا. هذا المسار لا يحتاج كاميرا أو HTTPS.",
+					)
+				}}
+			</p>
+			<label
+				>{{ text("Scanner pairing link", "رابط ربط الماسح")
+				}}<input
+					ref="linkInput"
+					:value="pairingLink"
+					readonly
+					dir="ltr"
+					@focus="linkInput?.select()"
+			/></label>
+			<button type="button" @click="copyLink">
+				{{ text("Copy pairing link", "نسخ رابط الربط") }}
+			</button>
 			<img
+				v-if="qr && scannerMode === 'phone'"
 				:src="qr"
 				:alt="text('Scan to pair your phone', 'امسح لربط الهاتف')"
 				width="190"
@@ -291,15 +340,15 @@ defineExpose({ prepareSave, resume, reset, focus });
 			<p>
 				{{
 					paired
-						? text("Phone connected", "الهاتف متصل")
+						? text("Scanner connected", "الماسح متصل")
 						: text(
-								"Scan this QR and sign in with the same manager account.",
-								"امسح الرمز وسجل الدخول بحساب المدير نفسه.",
+								"Open the pairing link (or scan the QR) and sign in with the same manager account.",
+								"افتح رابط الربط أو امسح الرمز وسجل الدخول بحساب المدير نفسه.",
 							)
 				}}
 			</p>
 			<button type="button" @click="disconnect">
-				{{ text("Disconnect phone", "فصل الهاتف") }}
+				{{ text("Disconnect scanner", "فصل الماسح") }}
 			</button>
 		</div>
 		<CameraScanner

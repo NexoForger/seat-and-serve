@@ -8,7 +8,9 @@ vi.mock("../../ui/client", () => ({
   post: api.post,
   eventId: () => `id-${++api.serial}`,
 }));
-vi.mock("qrcode", () => ({toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,test")}));
+vi.mock("qrcode", () => ({
+  toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,test"),
+}));
 const wrappers: ReturnType<typeof mount>[] = [];
 function form(initial = "") {
   const Host = defineComponent({
@@ -122,4 +124,25 @@ describe("HID and item draft", () => {
     await flushPromises();
     expect(w.vm.code).toBe("");
   });
+});
+
+it("shows a shareable PC scanner link without camera access", async () => {
+  const w = form();
+  api.post.mockResolvedValue({
+    token: "pair-secret",
+    desktop_secret: "owner-secret",
+  });
+  await w
+    .findAll("button")
+    .find((b) => b.text() === "Pair PC scanner")!
+    .trigger("click");
+  await flushPromises();
+  const link = w
+    .findAll("input")
+    .find((input) => input.attributes("readonly") !== undefined)!;
+  expect((link.element as HTMLInputElement).value).toContain(
+    "/till?scanner=usb#pair-secret",
+  );
+  expect(w.find("img").exists()).toBe(false);
+  expect(w.text()).toContain("No camera or HTTPS is needed");
 });

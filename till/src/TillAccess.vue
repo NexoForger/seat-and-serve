@@ -185,7 +185,7 @@ onBeforeUnmount(() => {
 			</button>
 		</form>
 	</main>
-	<template v-else>
+	<section v-else class="till-viewport">
 		<div class="pin-session-bar">
 			<span
 				>{{ user }} ·
@@ -198,11 +198,21 @@ onBeforeUnmount(() => {
 				{{ text("Sign out / switch staff", "خروج / تبديل الموظف") }}</button
 			><span v-if="error" role="alert">{{ error }}</span>
 		</div>
-		<Scanner v-if="scanner" />
-		<App v-else :pin-session="pinSession" />
-	</template>
+		<div class="till-workspace"><Scanner v-if="scanner" /><App v-else :pin-session="pinSession" /></div>
+	</section>
 </template>
 <style scoped>
+.till-viewport { height:100vh;height:100dvh;display:flex;flex-direction:column;min-width:0;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);background:#20261e; }
+.till-workspace { display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;overflow:hidden; }
+.till-workspace :deep(.register-shell) { flex:1;height:auto;min-height:0; }
+.till-workspace :deep(.item-manager) { flex:1;min-height:0;overflow:auto; }
+.till-workspace :deep(> main) { min-height:0;overflow:auto;max-width:100%; }
+.pin-session-bar { flex-shrink:0; }
+.pin-session-bar > span { min-width:0;overflow-wrap:anywhere; }
+.pin-session-bar > span:first-child { flex:1; }
+.pin-session-bar button { flex-shrink:0;min-height:44px; }
+
+
 .pin-screen {
 	min-height: 100vh;
 	display: grid;
@@ -292,4 +302,5 @@ onBeforeUnmount(() => {
 	padding: 8px;
 	cursor: pointer;
 }
+@media(max-width:600px) { .pin-session-bar {padding:6px 10px;font-size:11px;gap:6px;} .pin-session-bar button {max-width:45%;white-space:normal;} .pin-card{padding:20px;} .pin-screen{padding:16px;min-height:100dvh;} }
 </style>

@@ -6,7 +6,7 @@ export type Ticket = {
   lines: { name: string; item: string; item_name?: string; qty: number; note?: string; status: string }[];
 };
 
-export type OrderType = 'dine-in' | 'to-go' | 'kiosk' | 'counter' | 'other';
+export type OrderType = 'dine-in' | 'delivery' | 'to-go' | 'kiosk' | 'counter' | 'other';
 export type OrderCard = {
   order: string; orderNumber: string; channel: string; tableTitle: string; tabLabel: string; sentAt: string;
   tickets: Ticket[]; type: OrderType; runnerDispatchedAt?: string; parentOrderNumber?: string;
@@ -15,6 +15,7 @@ export type OrderCard = {
 function orderType(channel: string): OrderType {
   if (['Table', 'Tab', 'QR'].includes(channel)) return 'dine-in';
   if (['Takeaway', 'Pickup'].includes(channel)) return 'to-go';
+  if (channel === 'Delivery') return 'delivery';
   if (channel === 'Kiosk') return 'kiosk';
   if (['Till', 'Retail'].includes(channel)) return 'counter';
   return 'other';

@@ -31,6 +31,7 @@ function showSuccess(textValue: string) {
 
 const orderTypeLabel = (type: OrderType) => ({
   'dine-in': text('Dine in', 'داخل المطعم'),
+  delivery: text('Delivery', 'توصيل'),
   'to-go': text('To go', 'للخارج'),
   kiosk: text('Kiosk', 'كشك'),
   counter: text('Counter', 'الصندوق'),
@@ -137,7 +138,7 @@ watch([unacknowledgedOrders, soundReady], () => {
   if (unacknowledgedOrders.value.length && soundReady.value) startAlarm();
   else stopAlarm();
 });
-const types = computed(() => (['dine-in', 'to-go', 'kiosk', 'counter', 'other'] as OrderType[])
+const types = computed(() => (['dine-in', 'delivery', 'to-go', 'kiosk', 'counter', 'other'] as OrderType[])
   .map(type => ({ type, count: orders.value.filter(card => card.type === type).length }))
   .filter(row => row.type !== 'other' || row.count > 0));
 const outletTitle = computed(() => outlets.value.find(row => row.name === outlet.value)?.title || text('Kitchen', 'المطبخ'));

@@ -14,7 +14,7 @@ import frappe
 from frappe.utils import flt, now_datetime, today
 
 
-CHANNELS = {"Table", "Tab", "Takeaway", "Retail", "Kiosk", "QR", "Pickup"}
+CHANNELS = {"Table", "Tab", "Takeaway", "Delivery", "Retail", "Kiosk", "QR", "Pickup"}
 BUSINESS_TYPES = {"Restaurant/Pub", "Retail", "Mixed"}
 
 
@@ -76,7 +76,7 @@ def normalize(raw):
 		frappe.throw("Choose one or more valid channels")
 	if business_type == "Retail" and "Retail" not in channels:
 		frappe.throw("A retail business requires the Retail channel")
-	if business_type == "Restaurant/Pub" and not set(channels).intersection({"Table", "Tab", "Takeaway"}):
+	if business_type == "Restaurant/Pub" and not set(channels).intersection({"Table", "Tab", "Takeaway", "Delivery"}):
 		frappe.throw("A restaurant or pub requires a staff service channel")
 	warehouse = raw.get("warehouse") or None
 	price_list = raw.get("price_list") or None
@@ -277,7 +277,7 @@ def _apply_normalized(config):
 		created.append({"doctype": "POS Profile", "name": profile_doc.name})
 		profile = profile_doc.name
 	channel_fields = {"Table": "enable_tables", "Tab": "enable_tabs",
-		"Takeaway": "enable_takeaway", "Retail": "enable_retail",
+		"Takeaway": "enable_takeaway", "Delivery": "enable_delivery", "Retail": "enable_retail",
 		"Kiosk": "enable_kiosk", "QR": "enable_qr", "Pickup": "enable_pickup"}
 	outlet_fields = {field: int(channel in config["channels"])
 		for channel, field in channel_fields.items()}

@@ -44,6 +44,7 @@ button{border:0;background:#e8f574;color:#171917;border-radius:9px;padding:.8rem
 <label class="check"><input type="checkbox" name="channel" value="Table" checked> Table service</label>
 <label class="check"><input type="checkbox" name="channel" value="Tab" checked> Pub tabs</label>
 <label class="check"><input type="checkbox" name="channel" value="Takeaway" checked> Takeaway</label>
+<label class="check"><input type="checkbox" name="channel" value="Delivery" checked> Delivery</label>
 <label class="check"><input type="checkbox" name="channel" value="Retail"> Retail</label>
 <label class="check"><input type="checkbox" name="channel" value="Kiosk"> Kiosk</label>
 <label class="check"><input type="checkbox" name="channel" value="QR"> Table QR</label>
@@ -112,7 +113,7 @@ function fill(id,values,first=''){const select=document.querySelector('#'+id);se
 function collect(){const data=new FormData(form);return {company:data.get('company'),business_type:data.get('business_type'),outlet_title:data.get('outlet_title'),branch:data.get('branch'),register_title:data.get('register_title'),warehouse:data.get('warehouse'),price_list:data.get('price_list'),customer:data.get('customer'),pos_profile:data.get('pos_profile'),cash_mode:data.get('cash_mode'),write_off_account:data.get('write_off_account'),cost_center:data.get('cost_center'),tax_template:data.get('tax_template'),channels:data.getAll('channel'),lbp_per_usd:data.get('lbp_per_usd'),approve_fx_rate:data.has('approve_fx_rate'),enable_lbp:data.has('enable_lbp'),set_pos_invoice_mode:data.has('set_pos_invoice_mode'),seed_sample_data:data.has('seed_sample_data')}}
 function invalidate(){previewConfig=null;requestId=null;applyButton.disabled=true;document.querySelector('#plan').hidden=true}
 form.addEventListener('input',invalidate);form.addEventListener('change',invalidate);
-form.querySelector('[name=business_type]').addEventListener('change',e=>{const type=e.target.value,chosen=new Set(type==='Retail'?['Retail']:['Table','Tab','Takeaway']);if(type==='Mixed')chosen.add('Retail');for(const input of form.querySelectorAll('[name=channel]'))input.checked=chosen.has(input.value)});
+form.querySelector('[name=business_type]').addEventListener('change',e=>{const type=e.target.value,chosen=new Set(type==='Retail'?['Retail']:['Table','Tab','Takeaway','Delivery']);if(type==='Mixed')chosen.add('Retail');for(const input of form.querySelectorAll('[name=channel]'))input.checked=chosen.has(input.value)});
 async function loadOptions(){try{
   const state=await api('options',company.value?{company:company.value}:{});
   if(!company.options.length)for(const row of state.companies)company.add(new Option(row.name+' · '+row.default_currency,row.name));

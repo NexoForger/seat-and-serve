@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from decimal import Decimal, ROUND_HALF_UP
 from types import SimpleNamespace
 
 import frappe
@@ -74,6 +75,11 @@ def _receipt_rows(invoice, order, outlet, company, copy=False, test=False):
 		("pair", ("RECEIPT", invoice.name), "body"),
 		("pair", ("Date", f"{invoice.posting_date} {invoice.posting_time or ''}".strip()), "small"),
 		("pair", ("Order", order.order_number), "small")]
+	if getattr(order, "channel", None) == "Delivery":
+		rows += [("pair", ("Order type", "Delivery"), "body"),
+			("text", "Recipient: " + _clean(getattr(order, "delivery_name", "")), "body"),
+			("text", "Phone: " + _clean(getattr(order, "delivery_phone", "")), "body"),
+			("text", "Address: " + _clean(getattr(order, "delivery_address", "")), "body")]
 	if order.table:
 		rows.append(("pair", ("Table", frappe.db.get_value("TRT Table", order.table, "title") or order.table), "small"))
 	if invoice.customer_name:
@@ -96,6 +102,17 @@ def _receipt_rows(invoice, order, outlet, company, copy=False, test=False):
 		rows.append(("pair", ("Rounding", _money(flt(invoice.rounded_total) - flt(invoice.grand_total), currency)), "small"))
 	rows.extend([("rule", "", ""),
 		("pair", ("TOTAL", _money(invoice.rounded_total or invoice.grand_total, currency)), "title")])
+	if currency == "USD":
+		rate = flt(getattr(order, "lbp_per_usd", 0))
+		# Older mixed-currency cash sales already recorded their actual FX in exchange_rate.
+		if not rate and flt(getattr(order, "exchange_rate", 0)) > 1:
+			rate = flt(order.exchange_rate)
+		if rate > 0:
+			lbp_total = (Decimal(str(invoice.rounded_total or invoice.grand_total)) * Decimal(str(rate))).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+			rows.append(("pair", ("TOTAL (LBP)", _money(lbp_total, "LBP")), "body"))
+			rows.append(("text", "Exchange rate: 1 USD = " + f"{rate:,.6f}".rstrip("0").rstrip(".") + " LBP", "small"))
+		else:
+			rows += [("pair", ("TOTAL (LBP)", "Unavailable"), "small"), ("text", "Exchange rate: not recorded", "small")]
 	for payment in invoice.payments:
 		if flt(payment.amount):
 			rows.append(("pair", (_clean(payment.mode_of_payment), _money(payment.amount, currency)), "body"))

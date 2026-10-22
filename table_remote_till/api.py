@@ -27,7 +27,7 @@ STAFF_ROLES = {"System Manager", "TRT Manager", "TRT Cashier"}
 KITCHEN_ROLES = STAFF_ROLES | {"TRT Kitchen"}
 ORDER_FIELDS = [
 	"name", "order_number", "outlet", "register", "channel", "table", "guest_count", "parent_order", "reservation", "tab_label", "customer", "status",
-	"currency", "exchange_rate", "net_total", "tax_total", "grand_total", "revision", "pos_invoice",
+	"currency", "exchange_rate", "lbp_per_usd", "delivery_name", "delivery_phone", "delivery_address", "net_total", "tax_total", "grand_total", "revision", "pos_invoice",
 	"promotion", "manual_discount_type", "manual_discount_value", "manual_discount_reason", "loyalty_points_to_redeem", "loyalty_amount_redeemed",
 ]
 OPEN_ORDER_STATUSES = ("Draft", "Sent", "Preparing", "Ready", "Served")
@@ -505,7 +505,7 @@ def bootstrap():
 		"roles": roles,
 		"outlets": frappe.get_all(
 			"TRT Outlet", filters={"enabled": 1, **({"name": ["in", allowed]} if allowed is not None else {})},
-			fields=["name", "title", "company", "base_currency", "cash_currency", "enable_tables", "enable_tabs", "enable_takeaway", "enable_retail"],
+			fields=["name", "title", "company", "base_currency", "cash_currency", "enable_tables", "enable_tabs", "enable_takeaway", "enable_delivery", "enable_retail"],
 		),
 	}
 
@@ -696,6 +696,16 @@ def guest_link(outlet, channel="Pickup", table=None, qr_secret=None):
 		"table_title": stored.title if channel == "QR" else None}
 
 
+def _delivery_details(command):
+	result = {}
+	for field, label, limit in (("delivery_name", "recipient", 140), ("delivery_phone", "phone", 40), ("delivery_address", "address", 500)):
+		value = command.get(field)
+		if not isinstance(value, str) or not value.strip() or len(value.strip()) > limit or re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", value):
+			frappe.throw(f"Enter a delivery {label} of up to {limit} characters")
+		result[field] = value.strip()
+	return result
+
+
 @frappe.whitelist(allow_guest=True)
 def order_command(command, event_id, order_name=None, expected_revision=None, guest_token=None):
 	"""Apply one idempotent command; Frappe commits the POST as one transaction."""
@@ -722,7 +732,7 @@ def order_command(command, event_id, order_name=None, expected_revision=None, gu
 			frappe.throw("New orders require revision zero")
 		outlet = _outlet(command.get("outlet"))
 		channel = command.get("channel")
-		if channel not in ("Till", "Table", "Tab", "Takeaway", "Retail", "Kiosk", "QR", "Pickup"):
+		if channel not in ("Till", "Table", "Tab", "Takeaway", "Delivery", "Retail", "Kiosk", "QR", "Pickup"):
 			frappe.throw("Invalid sales channel")
 		scope = _authorize(outlet.name, channel, guest_token)
 		if channel == "Table" and not outlet.enable_tables:
@@ -731,6 +741,9 @@ def order_command(command, event_id, order_name=None, expected_revision=None, gu
 			frappe.throw("Retail is disabled")
 		if channel == "Tab" and not outlet.enable_tabs:
 			frappe.throw("Tabs are disabled")
+		if channel == "Delivery" and not outlet.enable_delivery:
+			frappe.throw("Delivery is disabled")
+		delivery = _delivery_details(command) if channel == "Delivery" else {}
 		if channel == "Takeaway" and not outlet.enable_takeaway:
 			frappe.throw("Takeaway is disabled")
 		if channel == "Kiosk" and not outlet.enable_kiosk:
@@ -785,7 +798,7 @@ def order_command(command, event_id, order_name=None, expected_revision=None, gu
 			"reservation": reservation,
 			"tab_label": command.get("tab_label"),
 			"customer": (command.get("customer") if not scope else None) or outlet.walk_in_customer,
-			"exchange_rate": 1, "status": "Draft", "revision": 1,
+			"exchange_rate": 1, "status": "Draft", "revision": 1, **delivery,
 			"guest_session": scope.get("session") if scope else None,
 		})
 		if scope and order.table != scope.get("table"):
@@ -954,11 +967,10 @@ def checkout_options(outlet):
 	profile = frappe.get_cached_doc("POS Profile", settings.pos_profile)
 	modes = [payment.mode_of_payment for payment in profile.payments
 		if frappe.db.get_value("Mode of Payment", payment.mode_of_payment, "type") == "Cash"]
-	rate = frappe.get_all("TRT FX Rate", filters={"outlet": outlet, "enabled": 1,
-		"effective_date": ["<=", frappe.utils.today()]},
-		fields=["lbp_per_usd", "effective_date"], order_by="effective_date desc, modified desc", limit=1)
+	from table_remote_till.exchange import approved_lbp_rate
+	rate = approved_lbp_rate(outlet)
 	return {"cash_modes": modes, "base_currency": settings.base_currency,
-		"fx_rate": rate[0] if rate else None,
+		"fx_rate": {"lbp_per_usd": rate} if rate else None,
 		"receipt_printer_available": bool(frappe.db.exists("TRT Device", {"outlet": outlet,
 			"kind": "Receipt Printer", "enabled": 1})),
 		"opening_entry": active_opening(profile.name),
@@ -1061,17 +1073,15 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 	if frappe.db.exists("POS Closing Entry", {"pos_opening_entry": opening, "docstatus": 1}):
 		frappe.throw("This shift is closing. Finish closing it before checkout")
 	base = order.currency
+	from table_remote_till.exchange import approved_lbp_rate
+	receipt_fx = approved_lbp_rate(outlet.name) if base in ("USD", "LBP") else None
 	fx = None
 	if any(row.get("currency") != base for row in tenders):
 		if {base, *(row.get("currency") for row in tenders)} - {"USD", "LBP"}:
 			frappe.throw("Only USD/LBP mixed cash is configured")
-		rates = frappe.get_all("TRT FX Rate", filters={"outlet": outlet.name,
-			"enabled": 1, "effective_date": ["<=", frappe.utils.today()]},
-			fields=["lbp_per_usd", "approved_by", "approved_on"],
-			order_by="effective_date desc, modified desc", limit=1)
-		if not rates or not rates[0].approved_by or not rates[0].approved_on or flt(rates[0].lbp_per_usd) <= 0:
+		if not receipt_fx:
 			frappe.throw("Approved USD/LBP exchange rate required")
-		fx = flt(rates[0].lbp_per_usd)
+		fx = receipt_fx
 	root_order = next((ticket for ticket in group if not ticket.parent_order), group[0])
 	if root_order.promotion:
 		frappe.db.sql("SELECT name FROM `tabTRT Promotion` WHERE name=%s FOR UPDATE", root_order.promotion)
@@ -1189,6 +1199,7 @@ def cash_checkout(order_name, tenders, event_id, expected_revision):
 		ticket.status = "Settled"
 		ticket.pos_invoice = invoice.name
 		ticket.exchange_rate = fx or 1
+		ticket.lbp_per_usd = receipt_fx or 0
 		ticket.revision += 1
 		ticket.save(ignore_permissions=True)
 	if root_order.reservation:

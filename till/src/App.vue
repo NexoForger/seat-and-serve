@@ -24,11 +24,15 @@ async function refreshCatalogItems() {
 const outlets = ref<Outlet[]>([]);
 const outlet = ref('');
 const channel = ref('');
-const step = ref<'type' | 'tables' | 'tabs' | 'reservations' | 'catalog'>('type');
+const mobilePane = ref<'catalog' | 'bill'>('catalog');
+const step = ref<'type' | 'tables' | 'tabs' | 'reservations' | 'delivery' | 'catalog'>('type');
 const catalog = ref<CatalogItem[]>([]);
 const order = ref<Order | null>(null);
 const search = ref('');
 const tabLabel = ref('');
+const deliveryName = ref('');
+const deliveryPhone = ref('');
+const deliveryAddress = ref('');
 const openTabs = ref<Pick<Order, 'name' | 'order_number' | 'tab_label' | 'status' | 'grand_total' | 'currency'>[]>([]);
 const notice = ref('');
 const noticeKind = ref<'success' | 'info' | 'warning' | 'error' | 'busy'>('info');
@@ -149,6 +153,7 @@ function setNotice(message: string, kind: typeof noticeKind.value = 'info') {
 const category = ref('');
 const loading = ref(true);
 const showPayment = ref(false);
+const paymentPanel = ref<HTMLElement | null>(null);
 const showTools = ref(false);
 const showSearch = ref(false);
 const selectedItem = ref<CatalogItem | null>(null);
@@ -193,6 +198,14 @@ const billNetTotal = computed(() => order.value?.bill?.net_total ?? order.value?
 const billTaxTotal = computed(() => order.value?.bill?.tax_total ?? order.value?.tax_total ?? 0);
 const billGrandTotal = computed(() => order.value?.bill?.grand_total ?? order.value?.grand_total ?? 0);
 const billAmountDue = computed(() => order.value?.bill?.amount_due ?? billGrandTotal.value);
+const lbpRate = computed(() => {
+  if ((order.value?.currency || selectedOutlet.value?.base_currency) !== 'USD') return 0;
+  const settled = order.value && ['Settled','Partially Returned','Returned'].includes(order.value.status);
+  const rate = Number(settled ? (order.value?.lbp_per_usd || (Number(order.value?.exchange_rate) > 1 ? order.value?.exchange_rate : 0)) : options.value?.fx_rate?.lbp_per_usd);
+  return Number.isFinite(rate) && rate > 0 ? rate : 0;
+});
+const usdBill = computed(() => (order.value?.currency || selectedOutlet.value?.base_currency) === 'USD');
+
 const billOrderNumbers = computed(() => order.value?.bill?.order_numbers || (order.value ? [order.value.order_number] : []));
 const billSettingsDirty = computed(() => !!order.value?.bill && (
   billCustomer.value !== (order.value.bill.customer || '') ||
@@ -218,6 +231,7 @@ const itemGroups = computed(() => {
 const price = (value: number) => money(value, order.value?.currency || selectedOutlet.value?.base_currency || 'USD', language.value);
 const saleTypes = [
   { value: 'Table', en: 'Dine in', ar: 'داخل المطعم', detail: 'Choose a table and resume its tickets', detailAr: 'اختر طاولة واستأنف طلباتها', icon: 'grid' },
+  { value: 'Delivery', en: 'Delivery', ar: 'توصيل', detail: 'Deliver to a recipient and address', detailAr: 'توصيل إلى المستلم وعنوانه', icon: 'bag' },
   { value: 'Takeaway', en: 'Takeaway', ar: 'سفري', detail: 'Prepare an order for collection', detailAr: 'جهّز طلباً للاستلام', icon: 'bag' },
   { value: 'Till', en: 'Counter', ar: 'الصندوق', detail: 'Serve and charge at the register', detailAr: 'خدمة ودفع عند الصندوق', icon: 'till' },
   { value: 'Tab', en: 'Open tab', ar: 'حساب مفتوح', detail: 'Keep a running guest tab', detailAr: 'افتح حساباً مستمراً للضيف', icon: 'list' },
@@ -225,6 +239,7 @@ const saleTypes = [
 ];
 const availableSaleTypes = computed(() => saleTypes.filter(sale =>
   sale.value === 'Table' ? selectedOutlet.value?.enable_tables :
+  sale.value === 'Delivery' ? selectedOutlet.value?.enable_delivery :
   sale.value === 'Takeaway' ? selectedOutlet.value?.enable_takeaway :
   sale.value === 'Tab' ? selectedOutlet.value?.enable_tabs :
   sale.value === 'Retail' ? selectedOutlet.value?.enable_retail : true));
@@ -448,7 +463,9 @@ async function chooseType(value: string) {
   selectedTable.value = null;
   order.value = null;
   channel.value = value;
-  step.value = value === 'Table' ? 'tables' : value === 'Tab' ? 'tabs' : 'catalog';
+  mobilePane.value = 'catalog';
+  step.value = value === 'Delivery' ? 'delivery' : value === 'Table' ? 'tables' : value === 'Tab' ? 'tabs' : 'catalog';
+  deliveryName.value = ''; deliveryPhone.value = ''; deliveryAddress.value = '';
   tabLabel.value = '';
   notice.value = '';
   if (value === 'Table') await loadTables();
@@ -480,6 +497,15 @@ const tableContextLabel = computed(() => {
   return text('New order for ', 'طلب جديد لـ ') + selectedTable.value.title;
 });
 
+async function startNewOrder() {
+  if (busy.value || loading.value) return;
+  if (channel.value !== 'Delivery') { await createOrder(); return; }
+  if (order.value?.status === 'Draft' && order.value.lines.length && !window.confirm(text('Start a new delivery? The current draft remains saved.', 'بدء توصيل جديد؟ تبقى المسودة الحالية محفوظة.'))) return;
+  order.value = null; showPayment.value = false;
+  deliveryName.value = ''; deliveryPhone.value = ''; deliveryAddress.value = '';
+  mobilePane.value = 'catalog'; step.value = 'delivery';
+}
+
 async function createOrder() {
   if (!outlet.value) return;
   if (channel.value === 'Table' && !selectedTable.value) {
@@ -505,6 +531,7 @@ async function createOrder() {
             ? currentOrder?.name
             : (selectedTableTickets.value.find(ticket => ticket.line_count > 0) || selectedTableTickets.value[0])?.name,
         } : {}),
+        ...(channel.value === 'Delivery' ? {delivery_name:deliveryName.value.trim(), delivery_phone:deliveryPhone.value.trim(), delivery_address:deliveryAddress.value.trim()} : {}),
         tab_label: tabLabel.value || undefined },
       event_id: eventId(), expected_revision: 0,
     });
@@ -650,8 +677,11 @@ async function togglePayment() {
       setNotice(text('This table bill is already paid.', 'تم دفع حساب هذه الطاولة.'), 'warning');
       return;
     }
+    mobilePane.value = 'bill';
     showPayment.value = true;
     syncBillSettings();
+    await nextTick();
+    paymentPanel.value?.scrollIntoView?.({ block: 'start' });
   } catch (error) { setNotice(String(error), 'error'); }
   finally { busy.value = false; }
 }
@@ -788,7 +818,7 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
 <template>
   <ItemManager v-if="itemsPage && !loading && canManageDiscount && outlet" :outlet="outlet" :outlet-title="selectedOutlet?.title || outlet" :language="language" @saved="refreshCatalogItems" />
   <div v-else-if="itemsPage" class="register-flow" style="padding: 32px"><a href="#">{{ text('Back to till', 'العودة للصندوق') }}</a><p>{{ loading ? text('Loading…', 'جارٍ التحميل…') : text('A manager account is required to add items.', 'تحتاج إلى حساب مدير لإضافة الأصناف.') }}</p><p v-if="notice">{{ notice }}</p></div>
-  <div v-show="!itemsPage" class="register-shell" :class="{ 'register-shell-flow': step !== 'catalog' }" :dir="rtl ? 'rtl' : 'ltr'" :lang="language">
+  <div v-show="!itemsPage" class="register-shell" :class="{ 'register-shell-flow': step !== 'catalog', 'register-mobile-bill': mobilePane === 'bill' }" :dir="rtl ? 'rtl' : 'ltr'" :lang="language">
     <dialog ref="shiftDialog" class="register-shift-dialog" :dir="rtl ? 'rtl' : 'ltr'" aria-labelledby="shift-title" @cancel="shiftSaving && $event.preventDefault()">
       <form v-if="shiftDetails" @submit.prevent="saveShift">
         <h2 id="shift-title">{{ shiftDetails.opening_entry ? text('Close shift', 'إغلاق الوردية') : text('Open shift', 'فتح الوردية') }}</h2>
@@ -831,9 +861,14 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
       <button class="register-search-toggle" type="button" :aria-label="text('Search items', 'ابحث عن الأصناف')" :aria-expanded="showSearch" @click="showSearch = !showSearch; if (!showSearch) search = ''"><Icon name="search" /></button>
     </nav>
 
+    <div v-if="step === 'catalog'" class="register-mobile-switch" role="group" :aria-label="text('Till view', 'عرض الصندوق')">
+      <button type="button" :aria-pressed="mobilePane === 'catalog'" aria-controls="checkout-catalog" @click="mobilePane = 'catalog'">{{ text('Products', 'الأصناف') }}</button>
+      <button type="button" :aria-pressed="mobilePane === 'bill'" aria-controls="current-order" @click="mobilePane = 'bill'"><span>{{ text('Bill', 'الفاتورة') }} · {{ itemCount }}</span><strong>{{ price(billGrandTotal) }}</strong></button>
+    </div>
     <aside v-if="step === 'catalog'" id="current-order" class="register-order" :aria-label="text('Current order', 'الطلب الحالي')">
       <div class="register-order-status"><span class="register-led" />{{ order ? `${order.order_number || text('Order', 'طلب')} · ${order.status}` : text('Ready to order…', 'جاهز للطلب…') }}<span class="register-order-count">{{ itemCount }}</span></div>
       <div class="register-sale-context"><strong>{{ channelTitle ? text(channelTitle.en, channelTitle.ar) : '' }}</strong><button type="button" :disabled="busy || loading" @click="showTypes">{{ text('Change order type', 'تغيير نوع الطلب') }}</button></div>
+      <div v-if="channel === 'Delivery'" class="register-delivery-context"><strong>{{ order?.delivery_name || deliveryName }}</strong><span>{{ order?.delivery_phone || deliveryPhone }}</span><span>{{ order?.delivery_address || deliveryAddress }}</span></div>
       <div v-if="channel === 'Table'" class="register-table-context"><div class="register-table-context-head"><strong>{{ selectedTable?.title || text('No table selected', 'لم يتم اختيار طاولة') }}</strong><button type="button" :disabled="busy || loading" @click="step = 'tables'">{{ text('Change table', 'تغيير الطاولة') }}</button></div><span>{{ tableContextLabel }}</span><label><span>{{ text('People', 'الأشخاص') }}</span><input v-model.number="guestCount" type="number" min="1" :max="selectedTable?.seats || 99" :disabled="!!order?.lines.length" /></label><label v-if="selectedTableTickets.length" class="register-ticket-select"><span>{{ text('Open ticket', 'الطلب المفتوح') }}</span><select :value="order?.name || ''" :disabled="busy || loading" @change="chooseTicket"><option value="" disabled>{{ text('Select ticket', 'اختر طلباً') }}</option><option v-for="ticket in selectedTableTickets" :key="ticket.name" :value="ticket.name">{{ ticket.order_number }} · {{ ticket.status }} · {{ price(ticket.grand_total) }}</option></select></label></div>
       <button v-if="channel === 'Tab'" type="button" :disabled="busy || loading" @click="showTabs">{{ text('Open tabs', 'الحسابات المفتوحة') }}</button>
       <label v-if="channel === 'Tab'" class="register-tab-name"><span>{{ text('Tab name', 'اسم الحساب') }}</span><input v-model="tabLabel" :disabled="!!order?.lines.length" :placeholder="text('Enter a name', 'أدخل اسماً')" /></label>
@@ -849,10 +884,11 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
         <div class="register-summary-label"><span class="register-led" />{{ channel === 'Table' ? text('Table bill', 'حساب الطاولة') : text('Summary', 'الملخص') }}<span>{{ billItemCount }} {{ text('items', 'صنف') }}</span></div>
         <div v-if="channel === 'Table'" class="register-bill-context"><strong>{{ billTicketCount }} {{ billTicketCount === 1 ? text('ticket in this bill', 'طلب في هذا الحساب') : text('tickets in this bill', 'طلبات في هذا الحساب') }}</strong><span>{{ billOrderNumbers.join(' · ') }}</span></div>
         <div class="register-total"><span>{{ text('Total', 'الإجمالي') }}</span><strong>{{ price(billGrandTotal) }}</strong></div>
+        <div v-if="usdBill" class="register-total-lbp"><span>{{ text('Total in LBP', 'الإجمالي بالليرة') }}</span><strong>{{ lbpRate ? money(billGrandTotal * lbpRate, 'LBP', language) : text('Rate not configured', 'سعر الصرف غير محدد') }}</strong></div>
         <div class="register-breakdown"><span>{{ text('Subtotal', 'المجموع') }} {{ price(billNetTotal) }}</span><span>{{ text('Tax included', 'الضريبة مشمولة') }} {{ price(billTaxTotal) }}</span></div>
         <div v-if="order?.bill?.discount_amount || order?.bill?.loyalty?.amount" class="register-savings"><span v-if="order.bill.discount_amount">{{ order.bill.discount_label || text('Discount', 'الخصم') }} −{{ price(order.bill.discount_amount) }}</span><span v-if="order.bill.loyalty?.amount">{{ text('Loyalty points', 'نقاط الولاء') }} −{{ price(order.bill.loyalty.amount) }}</span><strong>{{ text('Amount due', 'المبلغ المستحق') }} {{ price(billAmountDue) }}</strong></div>
-        <div class="register-actions"><button type="button" :disabled="busy || !order?.lines.length || order?.status !== 'Draft'" @click="send">{{ text('Send to kitchen', 'إرسال للمطبخ') }}</button><button type="button" :disabled="busy || !outlet || loading" @click="createOrder">{{ channel === 'Table' && selectedTableTickets.length ? text('Add items', 'إضافة أصناف') : text('New order', 'طلب جديد') }}</button><button type="button" :disabled="busy || !billItemCount || !order || !['Draft', 'Sent', 'Preparing', 'Ready', 'Served'].includes(order.status)" :aria-expanded="showPayment" @click="togglePayment">{{ text('Cash payment', 'الدفع النقدي') }}</button></div>
-        <Transition name="register-panel"><div v-if="showPayment && billItemCount && order && ['Draft', 'Sent', 'Preparing', 'Ready', 'Served'].includes(order.status)" class="register-payment">
+        <div class="register-actions"><button type="button" :disabled="busy || !order?.lines.length || order?.status !== 'Draft'" @click="send">{{ text('Send to kitchen', 'إرسال للمطبخ') }}</button><button type="button" :disabled="busy || !outlet || loading" @click="startNewOrder">{{ channel === 'Table' && selectedTableTickets.length ? text('Add items', 'إضافة أصناف') : text('New order', 'طلب جديد') }}</button><button type="button" :disabled="busy || !billItemCount || !order || !['Draft', 'Sent', 'Preparing', 'Ready', 'Served'].includes(order.status)" :aria-expanded="showPayment" @click="togglePayment">{{ text('Cash payment', 'الدفع النقدي') }}</button></div>
+        <Transition name="register-panel"><div v-if="showPayment && billItemCount && order && ['Draft', 'Sent', 'Preparing', 'Ready', 'Served'].includes(order.status)" ref="paymentPanel" class="register-payment">
           <h2>{{ channel === 'Table' ? text('Pay table bill', 'دفع حساب الطاولة') : text('Cash payment', 'الدفع النقدي') }}</h2>
           <p v-if="channel === 'Table'" class="register-payment-summary">{{ text('This payment includes', 'يشمل هذا الدفع') }} {{ billOrderNumbers.join(', ') }} · {{ price(billGrandTotal) }}</p>
           <p v-for="error in order?.bill?.billing_errors || []" :key="error" class="register-payment-warning" role="alert">{{ error }}</p>
@@ -868,7 +904,7 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
             <p v-if="order?.bill?.loyalty?.program">{{ text('Available', 'المتاح') }}: {{ order.bill.loyalty.available_points }} {{ text('points', 'نقطة') }} · {{ text('Program', 'البرنامج') }}: {{ order.bill.loyalty.program }}</p>
             <button type="button" class="register-apply-benefits" :disabled="busy || !billSettingsDirty" @click="applyBillSettings">{{ text('Apply to bill', 'تطبيق على الحساب') }}</button>
             <p v-if="billSettingsDirty" class="register-payment-warning">{{ text('Apply changes before confirming payment.', 'طبّق التغييرات قبل تأكيد الدفع.') }}</p>
-            <strong class="register-amount-due">{{ text('Amount due', 'المبلغ المستحق') }} · {{ price(billAmountDue) }}</strong>
+            <strong class="register-amount-due">{{ text('Amount due', 'المبلغ المستحق') }} · {{ price(billAmountDue) }}</strong><span v-if="usdBill && lbpRate" class="register-amount-due-lbp">{{ money(billAmountDue * lbpRate, 'LBP', language) }}</span>
           </div>
           <p v-if="!options?.opening_entry" class="register-payment-warning">{{ text('Open a POS shift before checkout.', 'افتح وردية اليوم قبل الدفع.') }} <button type="button" :disabled="busy || loading" @click="promptShift">{{ text('Open shift', 'فتح الوردية') }}</button></p>
           <p v-if="options && !options.pos_invoice_mode" class="register-payment-warning">{{ text('Set POS Settings to POS Invoice mode.', 'اضبط وضع فاتورة نقطة البيع.') }}</p>
@@ -887,7 +923,7 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
       </div>
     </aside>
 
-    <main class="register-catalog" :class="{ 'register-flow-main': step !== 'catalog' }" :aria-busy="loading">
+    <main id="checkout-catalog" class="register-catalog" :class="{ 'register-flow-main': step !== 'catalog' }" :aria-busy="loading">
       <section v-if="step === 'type'" class="register-flow" :aria-label="text('Choose order type', 'اختر نوع الطلب')">
         <p class="register-flow-eyebrow">{{ text('REGISTER · STEP 1 OF 2', 'الصندوق · الخطوة ١ من ٢') }}</p>
         <h1>{{ text('What kind of order?', 'ما نوع الطلب؟') }}</h1>
@@ -895,6 +931,16 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
         <Transition name="feedback"><Feedback v-if="notice" class="register-flow-feedback" :kind="noticeKind" :message="notice" :language="language" dismissible @dismiss="notice = ''" /></Transition>
         <div class="register-type-grid"><button v-for="sale in availableSaleTypes" :key="sale.value" type="button" class="register-type-card" :disabled="loading || busy" @click="chooseType(sale.value)"><span class="register-type-icon"><Icon :name="sale.icon" /></span><strong>{{ text(sale.en, sale.ar) }}</strong><small>{{ text(sale.detail, sale.detailAr) }}</small><Icon name="arrow" /></button></div>
         <button v-if="selectedOutlet?.enable_tables" class="register-reservation-entry" type="button" :disabled="loading || busy" @click="openReservations">{{ text('Reservations · Book or seat a guest', 'الحجوزات · احجز أو أجلس ضيفاً') }} →</button>
+      </section>
+      <section v-else-if="step === 'delivery'" class="register-flow">
+        <button type="button" class="register-flow-back" @click="showTypes">← {{text('Order types','أنواع الطلبات')}}</button>
+        <h1>{{text('Delivery','توصيل')}}</h1><p class="register-flow-copy">{{text('Enter the recipient and delivery address, then add items.','أدخل المستلم وعنوان التوصيل ثم أضف الأصناف.')}}</p>
+        <form class="register-delivery-form" @submit.prevent="step = 'catalog'">
+          <label>{{text('Recipient name','اسم المستلم')}}<input v-model="deliveryName" maxlength="140" required /></label>
+          <label>{{text('Phone','الهاتف')}}<input v-model="deliveryPhone" type="tel" maxlength="40" required dir="ltr" /></label>
+          <label>{{text('Delivery address','عنوان التوصيل')}}<textarea v-model="deliveryAddress" maxlength="500" rows="3" required /></label>
+          <button type="submit" :disabled="loading || !deliveryName.trim() || !deliveryPhone.trim() || !deliveryAddress.trim()">{{text('Continue to items','متابعة إلى الأصناف')}}</button>
+        </form>
       </section>
       <section v-else-if="step === 'tabs'" class="register-flow register-table-flow" :aria-label="text('Open tabs', 'الحسابات المفتوحة')">
         <button class="register-flow-back" type="button" :disabled="loading || busy" @click="showTypes">← {{ text('Order types', 'أنواع الطلبات') }}</button>

@@ -161,3 +161,11 @@ Add Items accepts optional barcodes from USB/wireless keyboard scanners, a phone
 ## Till staff PIN sign-in
 
 Staff can open `/till` without an ERPNext login and unlock it using a staff code and PIN. A System Manager configures PINs on **TRT Staff Assignment**. PIN sessions are restricted to Till and the assigned outlet; Desk still uses the normal ERP login. **Run site migration and restart workers after updating.** See [PIN setup and staff sign-in](docs/till-pin-login.md).
+
+## Screen layout, LBP totals, and delivery
+
+Till fits the available screen below the staff session bar. Phones and small tablets use **Products / Bill** buttons; wider screens show both panes. Checkout displays the LBP equivalent beneath USD totals using the outlet's enabled, effective, approved **TRT FX Rate**. Cash checkout saves that rate on the order; receipts and reprints use the saved rate and print the LBP total plus **1 USD = … LBP**. A missing rate is shown as unavailable rather than assumed.
+
+**Delivery** is a separate Till order type, controlled by **TRT Outlet → Enable Delivery**. Enter recipient, phone, and address before choosing items. The details are saved with the order and printed on its receipt; the kitchen display labels delivery tickets separately. **New order** requests fresh delivery details.
+
+These changes add Order and Outlet fields: after pulling, run `bench --site SITE migrate`, clear the site's cache, restart workers, and hard-refresh Till and Kitchen. Rebuilt assets for both apps are committed. Verify the approved outlet rate and a printed sample receipt on the remote equipment.

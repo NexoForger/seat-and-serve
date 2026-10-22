@@ -191,7 +191,7 @@ def lookup_barcode(outlet, barcode, channel="Till"):
 	"""Resolve only items sellable in the caller's outlet and current channel."""
 	from table_remote_till.api import catalog
 	_staff_outlet(outlet)
-	if channel not in ("Till", "Retail", "Table", "Tab", "Takeaway"):
+	if channel not in ("Till", "Retail", "Table", "Tab", "Takeaway", "Delivery"):
 		frappe.throw("Choose a Till sale type before scanning")
 	code = _barcode(barcode)
 	if not code:

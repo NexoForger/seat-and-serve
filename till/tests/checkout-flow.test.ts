@@ -38,14 +38,16 @@ beforeEach(() => {
     Promise.resolve(
       method === "bootstrap"
         ? {
-            outlets: [{ name: "OUT", title: "Outlet", base_currency: "USD" }],
+            outlets: [{ name: "OUT", title: "Outlet", base_currency: "USD", enable_delivery:1 }],
             roles: ["TRT Cashier"],
           }
         : method === "checkout_options"
           ? {
               cash_modes: ["Cash"],
               base_currency: "USD",
+              enable_delivery: 1,
               opening_entry: "OPEN",
+                fx_rate: {lbp_per_usd:89500},
             }
           : method === "register_tables"
             ? []
@@ -56,6 +58,7 @@ beforeEach(() => {
   );
   api.post.mockImplementation((_method, args) => {
     const command = args.command;
+    if(command.action === 'create') Object.assign(order,{channel:command.channel,delivery_name:command.delivery_name,delivery_phone:command.delivery_phone,delivery_address:command.delivery_address});
     if (command.action === "add_line")
       order.lines.push({
         name: "LINE-1",
@@ -124,4 +127,25 @@ it("does not add an arbitrary quantity for a weighed barcode", async () => {
   await scan();
   expect(wrapper!.text()).toContain("sold by weight");
   expect(api.post).not.toHaveBeenCalled();
+});
+
+it('shows the LBP equivalent beneath the USD total', async()=>{
+  await open();await scan();expect(wrapper!.get('.register-total-lbp').text()).toContain('268,500');
+});
+it('creates a delivery bill with contact and address details', async()=>{
+  wrapper=mount(App);await flushPromises();
+  await wrapper.findAll('.register-type-card').find(button=>button.text().includes('Delivery'))!.trigger('click');await flushPromises();
+  const inputs=wrapper.findAll('.register-delivery-form input');
+  await inputs[0]!.setValue('Recipient');await inputs[1]!.setValue('+961123456');await wrapper.get('.register-delivery-form textarea').setValue('Beirut, Street 1, Floor 2');
+  await wrapper.get('.register-delivery-form').trigger('submit');await flushPromises();await scan();
+  const create=api.post.mock.calls.find(([,args])=>args.command.action==='create')![1].command;
+  expect(create).toMatchObject({channel:'Delivery',delivery_name:'Recipient',delivery_phone:'+961123456',delivery_address:'Beirut, Street 1, Floor 2'});
+  expect(wrapper!.get('.register-delivery-context').text()).toContain('Beirut');
+});
+it('switches mobile products/bill panes without losing the bill',async()=>{
+  await open();await scan();
+  await wrapper!.findAll('.register-mobile-switch button')[1]!.trigger('click');
+  expect(wrapper!.get('.register-shell').classes()).toContain('register-mobile-bill');
+  await wrapper!.findAll('.register-mobile-switch button')[0]!.trigger('click');
+  expect(wrapper!.get('.register-shell').classes()).not.toContain('register-mobile-bill');expect(order.lines).toHaveLength(1);
 });

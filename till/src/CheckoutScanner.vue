@@ -70,10 +70,10 @@ async function submit() {
 watch(
 	() => props.disabled,
 	(disabled) => {
-		if (!disabled) focus();
+		if (!disabled && !window.matchMedia?.("(pointer: coarse)").matches) focus();
 	},
 );
-onMounted(focus);
+onMounted(() => { if (!window.matchMedia?.("(pointer: coarse)").matches) focus(); });
 onBeforeUnmount(() => {
 	disposed = true;
 	queue.length = 0;
@@ -146,4 +146,5 @@ onBeforeUnmount(() => {
 	margin: 0;
 	font-size: 13px;
 }
+@media(max-width:900px){.checkout-scanner input{font-size:16px;}}
 </style>

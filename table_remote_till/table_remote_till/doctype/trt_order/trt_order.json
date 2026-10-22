@@ -38,7 +38,11 @@
   "pickup_time",
   "runner_dispatched_at",
   "runner_dispatched_by",
-  "notes"
+  "notes",
+  "lbp_per_usd",
+  "delivery_name",
+  "delivery_phone",
+  "delivery_address"
  ],
  "fields": [
   {
@@ -67,7 +71,7 @@
    "fieldname": "channel",
    "fieldtype": "Select",
    "label": "Channel",
-   "options": "Till\nTable\nTab\nTakeaway\nRetail\nKiosk\nQR\nPickup",
+   "options": "Till\nTable\nTab\nTakeaway\nRetail\nKiosk\nQR\nPickup\nDelivery",
    "reqd": 1
   },
   {
@@ -89,7 +93,13 @@
    "label": "Add-on To",
    "options": "TRT Order"
   },
-  {"fieldname": "reservation", "fieldtype": "Link", "label": "Reservation", "options": "TRT Reservation", "read_only": 1},
+  {
+   "fieldname": "reservation",
+   "fieldtype": "Link",
+   "label": "Reservation",
+   "options": "TRT Reservation",
+   "read_only": 1
+  },
   {
    "fieldname": "tab_label",
    "fieldtype": "Data",
@@ -146,12 +156,44 @@
    "label": "Grand Total",
    "read_only": 1
   },
-  {"fieldname": "promotion", "fieldtype": "Link", "label": "Coupon", "options": "TRT Promotion", "read_only": 1},
-  {"fieldname": "manual_discount_type", "fieldtype": "Select", "label": "Manual Discount Type", "options": "\nPercentage\nAmount", "read_only": 1},
-  {"fieldname": "manual_discount_value", "fieldtype": "Currency", "label": "Manual Discount Value", "read_only": 1},
-  {"fieldname": "manual_discount_reason", "fieldtype": "Small Text", "label": "Manual Discount Reason", "read_only": 1},
-  {"fieldname": "loyalty_points_to_redeem", "fieldtype": "Int", "label": "Loyalty Points To Redeem", "read_only": 1},
-  {"fieldname": "loyalty_amount_redeemed", "fieldtype": "Currency", "label": "Loyalty Amount Redeemed", "read_only": 1},
+  {
+   "fieldname": "promotion",
+   "fieldtype": "Link",
+   "label": "Coupon",
+   "options": "TRT Promotion",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manual_discount_type",
+   "fieldtype": "Select",
+   "label": "Manual Discount Type",
+   "options": "\nPercentage\nAmount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manual_discount_value",
+   "fieldtype": "Currency",
+   "label": "Manual Discount Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manual_discount_reason",
+   "fieldtype": "Small Text",
+   "label": "Manual Discount Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loyalty_points_to_redeem",
+   "fieldtype": "Int",
+   "label": "Loyalty Points To Redeem",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loyalty_amount_redeemed",
+   "fieldtype": "Currency",
+   "label": "Loyalty Amount Redeemed",
+   "read_only": 1
+  },
   {
    "fieldname": "revision",
    "fieldtype": "Int",
@@ -201,6 +243,28 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "lbp_per_usd",
+   "fieldtype": "Float",
+   "label": "Receipt LBP per USD",
+   "read_only": 1,
+   "precision": "6"
+  },
+  {
+   "fieldname": "delivery_name",
+   "fieldtype": "Data",
+   "label": "Delivery recipient"
+  },
+  {
+   "fieldname": "delivery_phone",
+   "fieldtype": "Data",
+   "label": "Delivery phone"
+  },
+  {
+   "fieldname": "delivery_address",
+   "fieldtype": "Small Text",
+   "label": "Delivery address"
   }
  ],
  "permissions": [

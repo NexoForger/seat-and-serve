@@ -8,6 +8,7 @@ import Icon from '../../ui/Icon.vue';
 import Feedback from '../../ui/Feedback.vue';
 import ModifierPicker from '../../ui/ModifierPicker.vue';
 import ItemManager from './ItemManager.vue';
+import CheckoutScanner from './CheckoutScanner.vue';
 import { money } from '../../ui/format';
 
 const itemsPage = ref(window.location.hash === '#items');
@@ -514,6 +515,27 @@ async function createOrder() {
   finally { busy.value = false; }
 }
 
+async function scanCheckoutBarcode(barcode: string) {
+  if (busy.value || loading.value || !editable.value || showPayment.value || shiftDialog.value?.open || selectedItem.value || itemsPage.value || step.value !== 'catalog') {
+    throw new Error(text('Finish the current action before scanning.', 'أكمل الإجراء الحالي قبل المسح.'));
+  }
+  const context = {outlet: outlet.value, channel: channel.value, order: order.value?.name};
+  busy.value = true;
+  let item: CatalogItem;
+  try {
+    item = await get<CatalogItem>('items.lookup_barcode', {outlet: context.outlet, channel: context.channel, barcode});
+    if (context.outlet !== outlet.value || context.channel !== channel.value || context.order !== order.value?.name || !editable.value || showPayment.value || shiftDialog.value?.open || selectedItem.value || itemsPage.value || step.value !== 'catalog') {
+      throw new Error(text('The current bill changed. Scan again.', 'تغيرت الفاتورة الحالية. امسح مجدداً.'));
+    }
+  } finally { busy.value = false; }
+  if (item.weighed) throw new Error(text('This item is sold by weight. Select it and enter its weight manually.', 'هذا الصنف يباع بالوزن. اختره وأدخل الوزن يدوياً.'));
+  if (item.modifier_group) { selectedItem.value = item; return; }
+  // Merge only an uncustomized row; notes, modifiers and deal contents stay separate.
+  const line = order.value?.lines.find(line => line.item === item.item && !line.note && !line.modifiers?.length && !item.deal_kind);
+  const added = line ? await changeQty(line, line.qty + 1) : await add(item);
+  if (!added) throw new Error(notice.value || text("Item was not added. Scan again.", "لم يضف الصنف. امسح مجدداً."));
+}
+
 function choose(item: CatalogItem) {
   if (item.modifier_group) selectedItem.value = item;
   else void add(item);
@@ -524,9 +546,9 @@ async function addSelected(modifiers: string[], note: string) {
 }
 
 async function add(item: CatalogItem, modifiers: string[] = [], note = '') {
-  if (busy.value || !editable.value) return;
+  if (busy.value || !editable.value) return false;
   if (!order.value) await createOrder();
-  if (!order.value) return;
+  if (!order.value) return false;
   const attemptedOrder = order.value;
   busy.value = true; notice.value = '';
   try {
@@ -538,18 +560,20 @@ async function add(item: CatalogItem, modifiers: string[] = [], note = '') {
       tenders.value[0].amount = billAmountDue.value;
     selectedItem.value = null;
     setNotice(text(`${item.name_en} added to the order.`, `تمت إضافة ${item.name_ar || item.name_en} إلى الطلب.`), 'success');
+    return true;
   } catch (error) {
     if (attemptedOrder.channel === 'Table' && attemptedOrder.parent_order && !attemptedOrder.lines.length) {
       await loadTables();
-      if (!order.value) return;
+      if (!order.value) return false;
     }
     setNotice(String(error), 'error');
+    return false;
   }
   finally { busy.value = false; }
 }
 
 async function changeQty(line: Order['lines'][number], qty: number) {
-  if (!order.value || busy.value || !editable.value) return;
+  if (!order.value || busy.value || !editable.value) return false;
   busy.value = true; notice.value = '';
   try {
     order.value = await post<Order>('order_command', {
@@ -558,7 +582,8 @@ async function changeQty(line: Order['lines'][number], qty: number) {
     });
     if (tenders.value.length === 1 && tenders.value[0].currency === order.value.currency)
       tenders.value[0].amount = billAmountDue.value;
-  } catch (error) { setNotice(String(error), 'error'); }
+    return true;
+  } catch (error) { setNotice(String(error), 'error'); return false; }
   finally { busy.value = false; }
 }
 
@@ -904,6 +929,7 @@ onUnmounted(() => { window.removeEventListener('hashchange', syncPage); if (tabl
         </div>
       </section>
       <template v-else>
+      <CheckoutScanner v-if="!showPayment && !selectedItem && !returnLineName" :language="language" :disabled="loading || !editable" :scan="scanCheckoutBarcode" />
       <Transition name="register-panel"><label v-if="showSearch" class="register-search"><Icon name="search" /><input v-model="search" type="search" :placeholder="text('Search items…', 'ابحث عن الأصناف…')" :aria-label="text('Search items', 'ابحث عن الأصناف')" /></label></Transition>
       <div v-if="loading" class="register-catalog-empty">{{ text('Loading menu…', 'جارٍ تحميل القائمة…') }}</div>
       <div v-else-if="!visibleItems.length" class="register-catalog-empty"><Icon :name="catalog.length ? 'search' : 'kitchen'" /><h1>{{ catalog.length ? text('No matching items', 'لا توجد أصناف مطابقة') : text('No menu items yet', 'لا توجد أصناف بعد') }}</h1><p>{{ catalog.length ? text('Try another category or search.', 'جرّب فئة أو بحثاً آخر.') : text('Add items to this outlet’s menu to start taking orders.', 'أضف أصنافاً إلى قائمة هذا الفرع لبدء استقبال الطلبات.') }}</p><button v-if="catalog.length" type="button" @click="category = ''; search = ''">{{ text('Show all items', 'عرض كل الأصناف') }}</button><a v-else-if="canManageDiscount" href="#items">{{ text('Manage menu', 'إدارة القائمة') }}</a></div>

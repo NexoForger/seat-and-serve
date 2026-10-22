@@ -156,7 +156,7 @@ This app is its own Git repository inside the local bench. The outer Docker repo
 
 ## Add Items barcode scanning
 
-Add Items accepts optional barcodes from USB/wireless keyboard scanners, a phone camera, or a paired phone through the remote ERP. Scanning never saves an item automatically. See [barcode scanner setup and rollout checks](docs/barcode-scanning.md). Camera scanning requires HTTPS. A PC USB/dongle scanner can also relay barcodes into Add Items on a phone over HTTP using **Pair PC scanner**.
+Add Items accepts optional barcodes from USB/wireless keyboard scanners, a phone camera, or a paired phone through the remote ERP. Scanning never saves an item automatically. See [barcode scanner setup and rollout checks](docs/barcode-scanning.md). Camera scanning requires HTTPS. Checkout also accepts barcodes in the **Scan item barcode** field and increases the quantity of an existing plain line on repeat scans. A PC USB/dongle scanner can also relay barcodes into Add Items on a phone over HTTP using **Pair PC scanner**.
 
 ## Till staff PIN sign-in
 

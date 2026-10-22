@@ -176,3 +176,37 @@ class ItemTests(unittest.TestCase):
         self.module.create_item('OUTLET-A', self.details, self.request)
         docs[0][1].append.assert_not_called()
         self.assertNotIn('BOM', [args[0].get('doctype') for args, _ in docs if isinstance(args[0], dict)])
+
+    def test_checkout_barcode_lookup_uses_outlet_authorization_and_preserves_code(self):
+        api = types.ModuleType('table_remote_till.api')
+        item = {'item':'ITEM-1', 'name_en':'Product', 'uom':'Nos'}
+        api.catalog = Mock(return_value={'items':[item]})
+        self.frappe.db.get_value.return_value = Row(parent='ITEM-1', uom='Nos')
+        with patch.dict(sys.modules, {'table_remote_till.api':api}):
+            self.assertEqual(self.module.lookup_barcode('OUTLET-A', ' 001Ab '), item)
+        self.module._staff_outlet.assert_called_once_with('OUTLET-A')
+        self.frappe.db.get_value.assert_called_once_with('Item Barcode', {'barcode':'001Ab'}, ['parent','uom'], as_dict=True)
+
+    def test_checkout_lookup_rejects_unknown_unavailable_wrong_unit_and_public_channel(self):
+        api = types.ModuleType('table_remote_till.api')
+        api.catalog = Mock(return_value={'items':[]})
+        with patch.dict(sys.modules, {'table_remote_till.api':api}):
+            self.frappe.db.get_value.return_value = None
+            with self.assertRaisesRegex(ValueError, 'not found or item is unavailable'):
+                self.module.lookup_barcode('OUTLET-A','000')
+            self.frappe.db.get_value.return_value = Row(parent='PRIVATE',uom='Nos')
+            with self.assertRaisesRegex(ValueError, 'not found or item is unavailable'):
+                self.module.lookup_barcode('OUTLET-A','000')
+            api.catalog.return_value = {'items':[{'item':'PRIVATE','uom':'Kg'}]}
+            with self.assertRaisesRegex(ValueError, 'different sale unit'):
+                self.module.lookup_barcode('OUTLET-A','000')
+            with self.assertRaisesRegex(ValueError, 'sale type'):
+                self.module.lookup_barcode('OUTLET-A','000','QR')
+
+    def test_cashier_lookup_denies_cross_outlet_before_reading_barcode(self):
+        api = types.ModuleType('table_remote_till.api')
+        api.catalog = Mock()
+        self.module._staff_outlet.side_effect = PermissionError
+        with patch.dict(sys.modules, {'table_remote_till.api':api}), self.assertRaises(PermissionError):
+            self.module.lookup_barcode('OUTLET-B','000')
+        self.frappe.db.get_value.assert_not_called()

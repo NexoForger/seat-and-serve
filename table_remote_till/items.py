@@ -184,3 +184,22 @@ def create_item(outlet, details, request_id):
 		"event_type": "create_item", "payload_json": json.dumps({"fingerprint": fingerprint, "result": result}),
 		"status": "Applied", "received_at": now_datetime()}).insert(ignore_permissions=True)
 	return result
+
+
+@frappe.whitelist()
+def lookup_barcode(outlet, barcode, channel="Till"):
+	"""Resolve only items sellable in the caller's outlet and current channel."""
+	from table_remote_till.api import catalog
+	_staff_outlet(outlet)
+	if channel not in ("Till", "Retail", "Table", "Tab", "Takeaway"):
+		frappe.throw("Choose a Till sale type before scanning")
+	code = _barcode(barcode)
+	if not code:
+		frappe.throw("Scan a barcode first")
+	row = frappe.db.get_value("Item Barcode", {"barcode": code}, ["parent", "uom"], as_dict=True)
+	item = next((item for item in catalog(outlet, channel)["items"] if row and item["item"] == row.parent), None) if row else None
+	if not item:
+		frappe.throw("Barcode not found or item is unavailable in this outlet and sale type")
+	if row.uom and row.uom != item.get("uom"):
+		frappe.throw("This barcode uses a different sale unit. Select the item manually.")
+	return item

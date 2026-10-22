@@ -57,4 +57,12 @@ Before production use, verify on the remote equipment:
 - Two devices on different networks: pairing, reconnect/disconnect, expiry, delayed delivery after clearing/saving, and same-account/outlet restrictions.
 - In deployed ERPNext, confirm the Item Barcode and UOM, duplicate rejection, and no partial Item/Price/Menu/Recipe after a failed save.
 
-Checkout scanning and serial-mode scanners are outside this feature.
+## Barcode scanning at checkout
+
+Choose a sale type (and a table/tab when needed), then focus **Scan item barcode** in the Till catalog. Scan with a USB or wireless-dongle scanner in keyboard/HID mode, using Enter or Tab as the suffix. You can also type a code and click **Add barcode**. No camera, HTTPS or driver is required for this field on the device running Till.
+
+The first scan starts a draft bill when necessary and adds the item. A repeated scan increases the quantity of an existing plain line. Lines with notes, modifiers or deal contents stay separate. Required/optional modifier groups open the normal picker; complete it before scanning another item. Weighed items ask you to select the item and enter its weight manually. A barcode with a different UOM from the current sale unit is rejected rather than guessing a conversion.
+
+Lookup requires staff access to the current outlet (including PIN-session restrictions), and only returns items in its current sellable catalog. Unknown, disabled/unavailable, unpriced or other-outlet items do not get added. Scans run sequentially to preserve rapid repeated captures. An error cancels remaining queued scans; check the bill and rescan them. Scanning never takes payment or submits an order to the kitchen. Closed/sent bills cannot be changed by scanning; start an editable draft.
+
+The checkout field receives a scanner connected to that browser's device. The paired PC scanner page described above targets Add Items. Serial-mode scanners are unsupported.
